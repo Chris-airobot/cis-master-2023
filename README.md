@@ -1,1 +1,1 @@
-# CIS project inilisation
+# CIS project
