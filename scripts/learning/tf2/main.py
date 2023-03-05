@@ -1,6 +1,6 @@
 import gym
 import numpy as np
-from ppo_torch import Agent
+from agents import Agent
 from utils import plot_learning_curve
 
 
@@ -42,7 +42,7 @@ if __name__ == '__main__':
             next_state, reward, done, info = env.step(action)
             n_steps += 1
             score += reward
-            agent.remember(curr_state,action,prob,val,reward,done)
+            agent.store_transition(curr_state,action,prob,val,reward,done)
             
             if n_steps % N == 0:
                 agent.learn()
