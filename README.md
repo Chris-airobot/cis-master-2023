@@ -16,11 +16,11 @@
 
 # Week 2:
 ## Meeting summary:
-```
+
 1. Wrong plan, should think about my own game and use python to build the environment
 
 2. Remember to be very clear about the whole paper, this should be the first priority
-```
+
 ## Plan:
 - [Paper](https://arxiv.org/pdf/2103.04847.pdf) flowchart
 - Literature reviews and plan for proposal
