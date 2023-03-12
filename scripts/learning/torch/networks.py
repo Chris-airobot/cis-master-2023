@@ -20,12 +20,14 @@ class ActorNetwork(nn.Module):
             nn.Linear(fc2_dims, n_actions),
             nn.Softmax(dim=-1)
         )
-
+        # print(self.actor)
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
     
     def forward(self, state):
+        # print("you are here")
+        # print()
         dist = self.actor(state)
         dist = Categorical(dist)
 

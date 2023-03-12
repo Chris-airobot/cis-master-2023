@@ -8,6 +8,7 @@ class PPOMemory:
         self.actions = []
         self.rewards = []
         self.dones = []
+        self.truncated = []
 
         self.batch_size = batch_size
 
@@ -24,15 +25,17 @@ class PPOMemory:
                 np.array(self.vals),\
                 np.array(self.rewards),\
                 np.array(self.dones),\
+                np.array(self.truncated),\
                 batches
 
-    def store_memory(self, state, action, probs, vals, reward, done):
+    def store_memory(self, state, action, probs, vals, reward, done, truncated):
         self.states.append(state)
         self.actions.append(action)
         self.probs.append(probs)
         self.vals.append(vals)
         self.rewards.append(reward)
         self.dones.append(done)
+        self.truncated.append(truncated)
 
     def clear_memory(self):
         self.states = []
@@ -40,6 +43,8 @@ class PPOMemory:
         self.actions = []
         self.rewards = []
         self.dones = []
+        self.truncated = []
         self.vals = []
+
 
 

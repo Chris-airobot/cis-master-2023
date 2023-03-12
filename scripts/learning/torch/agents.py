@@ -25,8 +25,8 @@ class Agent:
         self.critic = CriticNetwork(input_dims, alpha)
         self.memory = PPOMemory(batch_size)
 
-    def remember(self, state, action, probs, vals, reward, done):
-        self.memory.store_memory(state, action,probs,vals,reward,done)
+    def remember(self, state, action, probs, vals, reward, done, truncated):
+        self.memory.store_memory(state, action, probs, vals, reward, done, truncated)
 
     def save_models(self):
         print('...saving models...')    
@@ -39,6 +39,7 @@ class Agent:
         self.critic.load_checkpoint()
 
     def choose_action(self, observation):
+        # print([observation])
         state = T.tensor([observation], dtype=T.float).to(self.actor.device)
 
         dist = self.actor(state)    
@@ -53,8 +54,9 @@ class Agent:
 
     def learn(self):
         for _ in range(self.n_epochs):
+            # print(self.memory.generate_batches())
             state_arr, action_arr, old_probs_arr, vals_arr,\
-            reward_arr, dones_arr, batches =\
+            reward_arr, dones_arr, truncated, batches =\
                     self.memory.generate_batches()
 
             values = vals_arr
@@ -66,7 +68,7 @@ class Agent:
                 a_t = 0
                 for k in range(t, len(reward_arr)-1):
                     # small_delta t function
-
+                    # print(f"dones: {dones_arr}")
                     a_t += discount*(reward_arr[k] + self.gamma*values[k+1]*\
                             (1-int(dones_arr[k])) - values[k])
                     # gamma * big_lambda
