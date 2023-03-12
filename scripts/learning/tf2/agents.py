@@ -36,8 +36,10 @@ class Agent:
         self.critic = keras.models.load_mode(self.chkpt_dir + 'critic')
 
     def choose_action(self, observation):
+        print(f'before: {observation}')
+        
         state = tf.convert_to_tensor([observation])
-
+        
         probs = self.actor(state)
         dist = tfp.distributions.Categorical(probs)
         action = dist.sample()
