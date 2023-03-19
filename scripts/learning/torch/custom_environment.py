@@ -55,26 +55,24 @@ class CustomEnvironment(ParallelEnv):
         
         # list of coordinates that the solver can go
         self.path = [(0,0)]
-        # self.helper_y = None
-        # self.helper_x = None
         self.prisoner_y = None
         self.prisoner_x = None
         self.timestep = None
         self.possible_agents = ["prisoner", "helper"]
-        self.grid = np.zeros((7, 7))
+        self.grid = np.zeros((7, 7), dtype = object)
         self.auxiliary = 1
 
-        # self.closer = False
-
+        
     def reset(self, seed=None, return_info=False, options=None):
+        # print("You are resetting")
+        self.grid = np.zeros((7, 7), dtype = object)
         self.agents = copy(self.possible_agents)
         self.timestep = 0
+        self.path = [(0,0)]
 
         self.prisoner_x = 0
         self.prisoner_y = 0
 
-        # self.helper_x = 7
-        # self.helper_y = 7
  
         self.escape_x = random.randint(2, 5)
         self.escape_y = random.randint(2, 5)
@@ -91,74 +89,105 @@ class CustomEnvironment(ParallelEnv):
         return observations
 
     def step(self, actions):
+        # print(actions)
         closer = False
         created = True
 
-        # Execute actions   
-        # 0 up, 1 down, 2 left, 3 right, 4 no movements
         prisoner_action = actions["prisoner"]
         helper_action = actions["helper"]
-
-        previous_distance = np.sqrt((self.prisoner_x - self.escape_x)** 2 +
-                                    (self.prisoner_y - self.escape_y)**2)
-
-        if prisoner_action == 0 and self.prisoner_x > 0:
-            self.prisoner_x -= 1
-        elif prisoner_action == 1 and self.prisoner_x < 6:
-            self.prisoner_x += 1
-        elif prisoner_action == 2 and self.prisoner_y > 0:
-            self.prisoner_y -= 1
-        elif prisoner_action == 3 and self.prisoner_y < 6:
-            self.prisoner_y += 1
-        elif prisoner_action == 4:
-            pass
+        # print(f'before prisoner: {self.prisoner_x, self.prisoner_y}')
+        # print(f'before escape: {self.escape_x, self.escape_y}')
         
-        after_distance = np.sqrt((self.prisoner_x - self.escape_x)** 2 +
-                                 (self.prisoner_y - self.escape_y)** 2)
+        # print(f'({self.escape_x}, {self.escape_y})')
 
-        closer = (after_distance - previous_distance) > 0
+        # print(f'after prisoner: {self.prisoner_x, self.prisoner_y}')
+        # print(f'after escape: {self.escape_x, self.escape_y}')
+
+
 
         # 0-3 building up/down/left/right
         if helper_action == 0 and self.prisoner_x > 0:
-            self.grid[self.prisoner_y][self.prisoner_x-1] = 1
-            self.path.append((self.prisoner_y, self.prisoner_x-1))
+            self.grid[self.prisoner_x-1][self.prisoner_y] = 1
+            self.path.append((self.prisoner_x-1, self.prisoner_y))
+            # print("Helper builds up")
         elif helper_action == 1 and self.prisoner_x < 6:
             # self.helper_x += 1
-            self.grid[self.prisoner_y][self.prisoner_x+1] = 1
-            self.path.append((self.prisoner_y, self.prisoner_x+1))
+            self.grid[self.prisoner_x+1][self.prisoner_y] = 1
+            self.path.append((self.prisoner_x+1, self.prisoner_y))
+            # print("Helper builds down")
         elif helper_action == 2 and self.prisoner_y > 0:
             # self.helper_y -= 1
-            self.grid[self.prisoner_y-1][self.prisoner_x] = 1
-            self.path.append((self.prisoner_y-1,self.prisoner_x))
+            self.grid[self.prisoner_x][self.prisoner_y-1] = 1
+            self.path.append((self.prisoner_x,self.prisoner_y-1))
+            # print("Helper builds left")
         elif helper_action == 3 and self.prisoner_y < 6:
-            self.grid[self.prisoner_y+1][self.prisoner_x] = 1
-            self.path.append((self.prisoner_y+1,self.prisoner_x))
+            self.grid[self.prisoner_x][self.prisoner_y+1] = 1
+            self.path.append((self.prisoner_x,self.prisoner_y+1))
+            # print("Helper builds right")
             # self.helper_y += 1
         else:
+            # print(helper_action)
             created = False
+            # print("Helper did nothing")
+
+        
+
+        previous_distance = np.sqrt((self.prisoner_x - self.escape_x)** 2 +
+                                    (self.prisoner_y - self.escape_y)**2)
+        # Execute actions   
+        # 0 up, 1 down, 2 left, 3 right, 4 no movements
+
+        if prisoner_action == 0 and self.prisoner_x > 0:
+            self.prisoner_x -= 1
+            # print("Solver moves up")
+        elif prisoner_action == 1 and self.prisoner_x < 6:
+            self.prisoner_x += 1
+            # print("Solver moves down")
+        elif prisoner_action == 2 and self.prisoner_y > 0:
+            self.prisoner_y -= 1
+            # print("Solver moves left")
+        elif prisoner_action == 3 and self.prisoner_y < 6:
+            self.prisoner_y += 1
+            # print("Solver moves right")
+            # print(f'({self.prisoner_x}, {self.prisoner_y})')
+        # elif prisoner_action == 4:
+            # print("Solver did nothing")
+            # pass
+        after_distance = np.sqrt((self.prisoner_x - self.escape_x)** 2 +
+                                 (self.prisoner_y - self.escape_y)** 2)
+
+        # print(f'previous distance: {previous_distance}, after_distance: {after_distance}')
+        closer = (after_distance - previous_distance) < 0    
+
+
+
+
+
 
         # Check termination conditions
         terminations = {a: False for a in self.agents}
         rewards = {a: 0 for a in self.agents}
         if created:
-            r_int = -0.1
+            r_int = -0.2
         else:
-            r_int = 0
-
+            r_int = -2
 
         # Solver touches the trap
+        # print(f'path included: {self.path}')
+        # print(f'Is it closer? {closer}')
         if (self.prisoner_x, self.prisoner_y) not in self.path:
-            r_ext = -3
-            r_inc = 0.1 if closer else 0 
+            r_ext = -2
+            r_inc = 1 if closer else 0 
             r_prisoner = r_ext*self.auxiliary + r_inc + r_int*self.auxiliary
             rewards = {"prisoner": r_ext, "helper": r_prisoner}
             terminations = {a: True for a in self.agents}
             self.agents = []
         # Solver reach the goal
         elif self.prisoner_x == self.escape_x and self.prisoner_y == self.escape_y:
-            r_ext = 2
-            r_inc = 0.1 if closer else 0 
+            r_ext = 5
+            r_inc = 0.8 if closer else 0 
             r_prisoner = r_ext*self.auxiliary + r_inc + r_int*self.auxiliary
+            print("Reaches the Goal!")
             rewards = {"prisoner": r_ext, "helper": r_prisoner}
             # rewards = {"prisoner": 1, "helper": -1}
             terminations = {a: True for a in self.agents}
@@ -190,9 +219,12 @@ class CustomEnvironment(ParallelEnv):
 
     def render(self):
         # grid = np.zeros((7, 7))
-        self.grid[self.prisoner_y, self.prisoner_x] = 20
+        for coord in self.path:
+            self.grid[coord[0]][coord[1]] = 1
+        # self.grid[np.isin(self.grid, 'S')] = 1
+        self.grid[self.prisoner_x][self.prisoner_y] = 'S'
         # grid[self.helper_y, self.helper_x] = "G"
-        self.grid[self.escape_y, self.escape_x] = 21
+        self.grid[self.escape_x][self.escape_y] = 'E'
         print(f"{self.grid} \n")
 
     @functools.lru_cache(maxsize=None)
