@@ -25,4 +25,19 @@ Procedural Content Generation
  - Domain Adversarial Reinforcement Learning
  - Adversarial Robust Deep Reinforcement Learning Requires Redefining Robustness
 
+# Week 3:
+## Summary:
+1. No meeting this week due to Wafa's conference travelling
+
+## Plan:
+- Finish the proposal
+- Continue the implementation of the Environment
+- Look deeper into the [robosuite](https://robosuite.ai/docs/overview.html)
+
+# Week 4:
+## Meeting summary:
+1. Continue implemeting the Environment
+    - Adding the interactive way 
+    - Consider changing of the environment in terms of the generator's action
+
 

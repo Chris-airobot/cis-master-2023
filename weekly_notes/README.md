@@ -39,3 +39,20 @@ $$
 1. Fixed: Like Atari game suite
 2. PCG: Generated based on a set of rules and random variables. 
 
+
+
+# Week 4:
+## Interactive way of training:
+- Links: [paper](https://arxiv.org/pdf/2110.03316.pdf), [code](https://github.com/robot-learning-freiburg/CEILing/tree/main)
+
+__Main idea is utilising the humans' feedback during training to improve performance.__ The proposed method: Corrective and evaluative Interactive Learning (CEILing).  
+
+They used two types of feedback:
+- Evaluative feedback $q$ : a scalar value $\in [0,1]$ that the human provides to the agent indicating the quality of the current agent behavior. 
+    - Initial value is 1, and the good action without correction is 1
+    - If the agent performs unsatisfactory at time $t$, and human is not able to easily correct it, $q = 0$, all subsequent states will be also labeled as 0 until the human changes it
+    - If the agent performs unsatisfactory at time $t$, and human is able to easily correct it, $q = -1$
+    - Evaluative feedback contribute to loss function, if the value is 0, it does not have any effects on updating the trajectory
+- Corrective feedback: from their definition, it is an information directly provided to the agent about how to improve its actions. I checked their source code, their corrective feedback also has two types:
+    - Fully control: ignore the action predicted from the RL network, the action will be fully based on the user input, (a list of keys to represent the robot action, like "a" goes left, "d" goes right and so on)  
+    - Partially control: combine the action predicted by the RL network and the user's input in with a weight factor of 1:1 ratio, the new action equals to $0.5\times predict + 0.5 \times input$

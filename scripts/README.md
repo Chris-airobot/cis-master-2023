@@ -44,4 +44,3 @@ Depends on whether updating Q values based on your current policy or not. Assume
 - pettingzoo == 1.22.3
 - gymnasium == 0.27.1
 
-W
