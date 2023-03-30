@@ -56,3 +56,13 @@ They used two types of feedback:
 - Corrective feedback: from their definition, it is an information directly provided to the agent about how to improve its actions. I checked their source code, their corrective feedback also has two types:
     - Fully control: ignore the action predicted from the RL network, the action will be fully based on the user input, (a list of keys to represent the robot action, like "a" goes left, "d" goes right and so on)  
     - Partially control: combine the action predicted by the RL network and the user's input in with a weight factor of 1:1 ratio, the new action equals to $0.5\times predict + 0.5 \times input$
+
+
+# Week 5:
+## Update the ideas:
+ - Focus the human-interaction in the Adversarial agent, like swapping the game difficulty level
+ - Come up with the module diagram of possible human-interven actions in the environment
+
+ ## Environment Updates:
+ 1. Prisoner should have actions of up/down/left/right one/two block(s), which is size of 8
+ 2. Generator has actions of generate two block(s) up/down/left/right in a row or one block away from the standing point, which is size of 8

@@ -14,16 +14,16 @@ from networks import ActorNetwork, CriticNetwork
 # N is horizon: number of steps we take before updating
 
 class Agent:
-    def __init__(self, n_actions, input_dims, gamma=0.99, alpha=0.0003, gae_lambda=0.95,
-            policy_clip=0.2, batch_size=64, N=2048, n_epochs=10, ):
-        self.gamma = gamma
-        self.policy_clip = policy_clip
-        self.n_epochs = n_epochs
-        self.gae_lambda = gae_lambda
-        
-        self.actor = ActorNetwork(n_actions, input_dims, alpha)
-        self.critic = CriticNetwork(input_dims, alpha)
-        self.memory = PPOMemory(batch_size)
+    def __init__(self, n_actions, input_dims, config):
+        self.gamma = config['gamma']
+        self.policy_clip = config['clip_ratio']
+        self.n_epochs = config['epochs']
+        self.td_lambda = config['td_lambda']
+        self.chkpt_dir = 'checkpoint/' + config['environment_type']
+
+        self.actor = ActorNetwork(n_actions, input_dims, config['alpha'], chkpt_dir=self.chkpt_dir)
+        self.critic = CriticNetwork(input_dims, config['alpha'], chkpt_dir=self.chkpt_dir)
+        self.memory = PPOMemory(config['batch_size'])
 
     def remember(self, state, action, probs, vals, reward, done, truncated):
         self.memory.store_memory(state, action, probs, vals, reward, done, truncated)
@@ -72,7 +72,7 @@ class Agent:
                     a_t += discount*(reward_arr[k] + self.gamma*values[k+1]*\
                             (1-int(dones_arr[k])) - values[k])
                     # gamma * big_lambda
-                    discount *= self.gamma*self.gae_lambda
+                    discount *= self.gamma*self.td_lambda
                 advantage[t] = a_t
             advantage = T.tensor(advantage).to(self.actor.device)
 

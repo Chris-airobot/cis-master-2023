@@ -1,47 +1,36 @@
-import gym
+# from gymnasium.wrappers import FlattenObservation
 import numpy as np
 from agents import Agent
-from utils import plot_learning_curve
-from custom_environment import CustomEnvironment
+from utils import *
+from double_environment import DoubleEnvironment
+from argparse import ArgumentParser
+import wandb
 
 
-if __name__ == '__main__':
-    # env = gym.make('CartPole-v0')
-    env = CustomEnvironment()
+def single_training(config):
+    pass
 
-    N = 20
-    batch_size = 5
-    n_epochs = 4
-    alpha = 0.0003
+
+
+def double_training(config):
+    env = DoubleEnvironment()
+
 
     n_actions = env.action_space().n
-    # n_actions = env.action_space.n
-    # print(f"n_actions is {n_actions}")
     input_dims = env.observation_space().shape
-    # print(input_dims)
 
-    # agent = Agent(n_actions, 
-    #               batch_size=batch_size, 
-    #               alpha=alpha, 
-    #               n_epochs=n_epochs, 
-    #               input_dims=input_dims)
     solver = Agent(n_actions, 
-                  batch_size=batch_size, 
-                  alpha=alpha, 
-                  n_epochs=n_epochs, 
-                  input_dims=input_dims)
+                   config=config,
+                   input_dims=input_dims)
     
     generator = Agent(n_actions, 
-                  batch_size=batch_size, 
-                  alpha=alpha, 
-                  n_epochs=n_epochs, 
-                  input_dims=input_dims)
+                      config=config,
+                      input_dims=input_dims)
     
     
     
-    n_games = 300
 
-    figure_file = 'plots/cartpole.png'
+    figure_file = 'plots/' + config['environment_type'] +'.png'
     best_score = -1000
     score_history = []
     score_generator_history = []
@@ -51,7 +40,7 @@ if __name__ == '__main__':
     n_steps = 0
 
 
-    for i in range(n_games):
+    for i in range(config['episodes']):
         curr_state = env.reset()
         done = {'prisoner': False, 'helper': False}
         truncated = {'prisoner': False, 'helper': False}
@@ -59,34 +48,26 @@ if __name__ == '__main__':
         score_solver = 0
         score = 0
 
-        count = 0
+
+
         while True not in done.values() and True not in truncated.values():
-            count += 1
+
             curr_state = curr_state['prisoner']
             action_1, prob_1, val_1 = generator.choose_action(curr_state)
             action_2, prob_2, val_2 = solver.choose_action(curr_state)
             actions = {'prisoner': action_1, 'helper': action_2}
-            # print(f'actions: {actions}')
-            next_state, reward, done, truncated, info = env.step(actions)
-            # print(f'terminated values: {done}')
-            # print(f'truncated values: {truncated}')
+            # print(f'Prisoner action: {prisoner_action_map[actions["prisoner"]] }')
+            # print(f'Helper action: {helper_action_map[actions["helper"]] }')
+            next_state, reward, done, truncated, _ = env.step(actions)
+
             env.render()
-            # quit()
-            # if count == 2: quit()
-            # print(f'next_state: {next_state}')
-            # print(f"are you done? {False not in truncated}")
-            # print(f'now, the count is {count}')
-            
             score_generator += reward['helper']
             score_solver += reward['prisoner']
             score =  score_generator + score_solver
-            # print(f'reward: {reward}')
-            # print(f'done: {done}')
-            # print(f'truncated: {truncated}')
             generator.remember(curr_state, action_1, prob_1, val_1, reward['helper'], done['helper'], truncated['helper'])
             solver.remember(curr_state, action_2, prob_2, val_2, reward['prisoner'], done['prisoner'], truncated['prisoner'])
             
-            if n_steps % N == 0:
+            if n_steps % config['saving_steps'] == 0:
                 generator.learn()
                 solver.learn()
                 learn_iters += 1
@@ -105,9 +86,51 @@ if __name__ == '__main__':
             solver.save_models()
 
         print(f'episode: {i},  score: {score}, generator_score: {avg_generator_score}, solver_score: {avg_solver_score}, time_steps: {n_steps}, learning_steps: {learn_iters}')
+        
 
         x = [i+1 for i in range(len(score_history))]
         plot_learning_curve(x, score_history,figure_file)
+
+
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument(
+        "-e",
+        "--environment_type",
+        dest="environment_type",
+        default="adversarial",
+        metavar='',
+        help="options: adversarial, single, collaborative, adversarial_interaction",
+    )
+    args = parser.parse_args()
+
+
+    config ={
+        "environment_type" : args.environment_type,
+        "saving_steps" : 20,
+        "batch_size": 5,
+        "epochs": 4,
+        "alpha": 0.0003, # learning rate
+        "clip_ratio": 0.2,
+        "gamma": 0.99,   # discount factor
+        "td_lambda": 0.95,
+        "episodes": 300
+    }
+
+    # wandb.init(config=config_defaults, project="adversarialrl", mode="disabled")
+    # config = wandb.config  # important, in case the sweep gives different values
+
+
+
+    if args.environment_type == 'single':
+        single_training(config)
+    else:
+        double_training(config)
+
+
+
 
 
 
