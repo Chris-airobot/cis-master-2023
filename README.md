@@ -40,4 +40,7 @@ Procedural Content Generation
     - Adding the interactive way 
     - Consider changing of the environment in terms of the generator's action
 
-
+# Week 5:
+## Meeting summary:
+1. Change the way of applying "Interaction", for now, considering do it by swapping game difficulties
+2. Creating a module diagram for different methods of interaction 
