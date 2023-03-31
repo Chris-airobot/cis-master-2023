@@ -1,9 +1,8 @@
 import functools
 import random
 from copy import copy
-
 import numpy as np
-from gymnasium.spaces import Discrete, MultiDiscrete, Sequence, Tuple, Dict, Box
+from gymnasium.spaces import Discrete, MultiDiscrete
 
 from pettingzoo.utils.env import ParallelEnv
 from pettingzoo import ParallelEnv
@@ -167,16 +166,16 @@ class DoubleEnvironment(ParallelEnv):
             # print("Solver moves right")
         
         # 2 block move: 4 up, 5 down, 6 left, 7 right
-        elif prisoner_action == 5 and self.prisoner_x > 1:
+        elif prisoner_action == 4 and self.prisoner_x > 1:
             self.prisoner_x -= 2
             # print("Solver moves up")
-        elif prisoner_action == 6 and self.prisoner_x < 5:
+        elif prisoner_action == 5 and self.prisoner_x < 5:
             self.prisoner_x += 2
             # print("Solver moves down")
-        elif prisoner_action == 7 and self.prisoner_y > 1:
+        elif prisoner_action == 6 and self.prisoner_y > 1:
             self.prisoner_y -= 2
             # print("Solver moves left")
-        elif prisoner_action == 8 and self.prisoner_y < 5:
+        elif prisoner_action == 7 and self.prisoner_y < 5:
             self.prisoner_y += 2
 
 
