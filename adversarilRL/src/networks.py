@@ -6,12 +6,12 @@ from torch.distributions.categorical import Categorical
 
 # Actor decides what to do based on the current state
 class ActorNetwork(nn.Module):
-    def __init__(self, n_actions, input_dims, alpha, fc1_dims=512,
-            fc2_dims=512, chkpt_dir='checkpoint/ppo'):
+    def __init__(self, n_actions, input_dims, alpha, name, chkpt_dir, fc1_dims=512,
+            fc2_dims=512):
         # print(f'current directory is {os.getcwd}')
         super(ActorNetwork,self).__init__()
 
-        self.checkpoint_file = os.path.join(chkpt_dir, 'actor_torch_ppo')
+        self.checkpoint_file = os.path.join(chkpt_dir, 'actor_'+name)
         self.actor = nn.Sequential(
             nn.Linear(*input_dims, fc1_dims),
             nn.ReLU(),
@@ -42,13 +42,11 @@ class ActorNetwork(nn.Module):
 # Critic is used to evaluate the states, as in this state good, means we did good for last move
 # if this state is bad, it means we chose bad move last time
 class CriticNetwork(nn.Module):
-    def __init__(self, input_dims, alpha, fc1_dims = 512, fc2_dims=512,
-            chkpt_dir='checkpoint/ppo'):
+    def __init__(self, input_dims, alpha, chkpt_dir, name, fc1_dims = 512, fc2_dims=512):
         super(CriticNetwork,self).__init__()
 
-        self.checkpoint_file = os.path.join(chkpt_dir, 'critic_torch_ppo')
+        self.checkpoint_file = os.path.join(chkpt_dir, 'critic_'+name)
         # Seems using the sequential model has much higher success rate than individual models
-        # No idea why 
         self.critic = nn.Sequential(
             nn.Linear(*input_dims, fc1_dims),
             nn.ReLU(),

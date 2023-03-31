@@ -14,15 +14,15 @@ from networks import ActorNetwork, CriticNetwork
 # N is horizon: number of steps we take before updating
 
 class Agent:
-    def __init__(self, n_actions, input_dims, config):
+    def __init__(self, n_actions, input_dims, config, chkpt_dir, name):
         self.gamma = config['gamma']
         self.policy_clip = config['clip_ratio']
         self.n_epochs = config['epochs']
         self.td_lambda = config['td_lambda']
-        self.chkpt_dir = 'checkpoint/' + config['environment_type']
+        self.chkpt_dir = chkpt_dir
 
-        self.actor = ActorNetwork(n_actions, input_dims, config['alpha'], chkpt_dir=self.chkpt_dir)
-        self.critic = CriticNetwork(input_dims, config['alpha'], chkpt_dir=self.chkpt_dir)
+        self.actor = ActorNetwork(n_actions, input_dims, config['alpha'], name=name, chkpt_dir=self.chkpt_dir)
+        self.critic = CriticNetwork(input_dims, config['alpha'], name=name , chkpt_dir=self.chkpt_dir)
         self.memory = PPOMemory(config['batch_size'])
 
     def remember(self, state, action, probs, vals, reward, done, truncated):

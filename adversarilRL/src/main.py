@@ -7,7 +7,7 @@ from single_environment import SingleEnvironment
 from argparse import ArgumentParser
 import os
 
-os.system("clear")
+os.system('clear')
 
 def training(config):
     agents = {}
@@ -17,12 +17,16 @@ def training(config):
         env = DoubleEnvironment()
         agents['helper'] = Agent(env.action_space().n, 
                    config=config,
-                   input_dims=env.observation_space().shape)
-        agents['helper'].load_models()
+                   input_dims=env.observation_space().shape,
+                   chkpt_dir='checkpoint/' + config['environment_type'],
+                   name='helper')
+        # agents['helper'].load_models()
 
     agents['prisoner'] = Agent(env.action_space().n, 
                                config=config,
-                               input_dims=env.observation_space().shape)
+                               input_dims=env.observation_space().shape,
+                               chkpt_dir='checkpoint/' + config['environment_type'],
+                               name='prisoner')
     agents['prisoner'].load_models()
  
     figure_file = {
@@ -36,7 +40,7 @@ def training(config):
     score_helper_history = []
     score_prisoner_history = []
     learn_iters = 0
-    avg_score = 0
+    # avg_score = 0
     n_steps = 0
 
     for i in range(config['episodes']):
@@ -82,19 +86,19 @@ def training(config):
 
                     learn_iters += 1 if config['environment_type'] == 'single' else 0.5
             curr_state = next_state
-     
         score_history.append(total_score)
         score_helper_history.append(scores['helper'])
         score_prisoner_history.append(scores['prisoner'])
 
-        avg_score = np.mean(score_history[-100:])
+        # avg_score = np.mean(score_history[-100:])
         avg_helper_score = np.mean(score_helper_history[-100:])
         avg_prisoner_score = np.mean(score_prisoner_history[-100:])
 
         if avg_prisoner_score > best_score:
-            best_score = avg_prisoner_score
-            for _, agent in agents.items():
-                agent.save_models()
+            if i > 10:
+                best_score = avg_prisoner_score
+                for _, agent in agents.items():
+                    agent.save_models()
 
         print(f'episode: {i}, helper_score: {avg_helper_score}, prisoner_score: {avg_prisoner_score}, time_steps: {n_steps}, learning_steps: {learn_iters}')
         

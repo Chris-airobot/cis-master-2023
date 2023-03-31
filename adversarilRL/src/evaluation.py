@@ -3,7 +3,11 @@ import numpy as np
 from agents import Agent
 from single_environment import SingleEnvironment
 from argparse import ArgumentParser
+import os
+import shutil
 
+
+os.system('clear')
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -26,18 +30,28 @@ if __name__ == '__main__':
         "clip_ratio": 0.2,
         "gamma": 0.99,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 300
+        "episodes": 20
     }
-
-    figure_file = {
-        'prisoner': 'plots/' + config['environment_type'] +'/prisoner.png',
-    }
-
+    
+    # Initial settings
+    figure_file = {'prisoner': 'plots/' + config['environment_type'] +'/prisoner.png',}
+    chkpt_dir = 'checkpoint/' + config['environment_type']
+    name='prisoner'
+    model_files = [chkpt_dir+'/critic_'+name, chkpt_dir+'/actor_'+name]
+    
+    # Creating environment 
     env = SingleEnvironment()
+    
     prisoner = Agent(env.action_space().n,
                      config=config,
-                     input_dims=env.observation_space().shape)
+                     input_dims=env.observation_space().shape,
+                     chkpt_dir=chkpt_dir,
+                     name=name)
+    
     prisoner.load_models()
+    
+
+
 
     best_score = -1000
     score_history = []
@@ -66,7 +80,7 @@ if __name__ == '__main__':
             if info['prisoner']:
                 completed +=1
             n_steps += 1
-            env.render()
+            # env.render()
             scores["prisoner"] += reward['prisoner']
             # prisoner.remember(curr_state, action, prob, val, reward, done, truncated)
 
@@ -83,3 +97,8 @@ if __name__ == '__main__':
 
         y = [i+1 for i in range(len(score_prisoner_history))]
         plot_learning_curve(y, score_prisoner_history,figure_file['prisoner'], 'prisoner')
+
+    for file in model_files:
+        prefix = './checkpoint_history'
+        target = prefix+file[10:]+f'_{int(completed /config["episodes"]*100)}'
+        shutil.copyfile(file, target)

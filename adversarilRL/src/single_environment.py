@@ -1,3 +1,4 @@
+
 import functools
 import random
 from copy import copy
@@ -72,12 +73,12 @@ class SingleEnvironment(ParallelEnv):
         rewards = {a: 0 for a in self.agents}
         # closer = False
         # created = True
-        r_timeout = -self.timestep * 0.01
+        r_timeout = -self.timestep * 0.03
 
         prisoner_action = actions["prisoner"]
 
         previous_distance = np.sqrt((self.prisoner_x - self.door_x)** 2 +
-                                    (self.prisoner_x - self.door_y)** 2)
+                                    (self.prisoner_y - self.door_y)** 2)
         
         
         # Execute actions   
@@ -115,14 +116,14 @@ class SingleEnvironment(ParallelEnv):
             # print("Solver did nothing")
             # pass
         after_distance = np.sqrt((self.prisoner_x - self.door_x)** 2 +
-                                 (self.prisoner_x - self.door_y)** 2)
+                                 (self.prisoner_y - self.door_y)** 2)
 
         # print(f'previous distance: {previous_distance}, after_distance: {after_distance}')
         closer = (after_distance - previous_distance)     
         if closer == 0:
-            r_closer = -0.3
+            r_closer = -0.5
         elif closer < 0:
-            r_closer = 0.3
+            r_closer = 0.5
         else: 
             r_closer = -0.3
 
