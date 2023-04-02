@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import random
 
 
 
@@ -59,25 +59,34 @@ def plot_learning_curve(x, scores, figure_file, name):
     plt.title(f'Running average of previous 100 {name} scores')
     plt.savefig(figure_file)
 
-
-
-def map_generation(grid, current, visited, end):
-
+def map_check(grid: np.array, current: tuple, visited: list, end:tuple):
     myQ = Queue()
     visited.append(current)
     myQ.push(current)
     while not myQ.isEmpty():
         coord = myQ.pop()
-        grid[coord[0]][coord[1]] = 1
-        if coord == end:
-            # print(f"Goal is: {end}")
-            # print(f"{grid} \n")     
-            return grid, visited
-        else:
-            for successor in getSuccessors(coord):
-                if successor not in visited:
-                    visited.append(successor)
-                    myQ.push(successor)
+        if grid[coord[0]][coord[1]] == 1 or grid[coord[0]][coord[1]] == 'G' or grid[coord[0]][coord[1]] == 'P':
+            if coord == end:    
+                # print(f"Goal is: {end}")
+                # print(f"There is a path")     
+                return True
+            else:
+                for successor in getSuccessors(coord):
+                    if successor not in visited:
+                        visited.append(successor)
+                        myQ.push(successor)
+        
+    # print("No valid path")  
+    return False    
+
+def map_generation(grid:np.array, bridges:list):
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            grid[i][j] = random.randint(0,1)
+            if grid[i][j] == 1:
+                bridges.append((i,j))
+    return grid, bridges
+
 
 
 def getSuccessors(current):
@@ -90,5 +99,13 @@ def getSuccessors(current):
         connected_points.append((current[0], current[1]-1))
     if current[1] < 6:
         connected_points.append((current[0], current[1]+1))
+    if current[0] > 1:
+        connected_points.append((current[0]-2, current[1]))
+    if current[0] < 5:
+        connected_points.append((current[0]+2, current[1]))
+    if current[1] > 1:
+        connected_points.append((current[0], current[1]-2))
+    if current[1] < 5:
+        connected_points.append((current[0], current[1]+2))
     
     return connected_points 

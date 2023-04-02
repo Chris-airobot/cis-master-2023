@@ -27,15 +27,21 @@ def training(config):
                                input_dims=env.observation_space().shape,
                                chkpt_dir='checkpoint/' + config['environment_type'],
                                name='prisoner')
-    agents['prisoner'].load_models()
+    # agents['prisoner'].load_models()
  
     figure_file = {
         'total': 'plots/' + config['environment_type'] + '/total.png',
         'prisoner': 'plots/' + config['environment_type'] +'/prisoner.png',
         'helper': 'plots/' + config['environment_type'] + '/helper.png'
     }
-    
-    best_score = -1000
+
+    # Read best score from previous training
+    f = open('Python.txt', 'r')
+    if f.mode=='r':
+        contents= f.read()
+        
+    best_score = float(contents)
+    changed = False
     score_history = []
     score_helper_history = []
     score_prisoner_history = []
@@ -50,14 +56,13 @@ def training(config):
         for key in agents.keys():
             done[key] = False
             truncated[key] = False
-        scores = {
-            'prisoner' : 0,
-            'helper' : 0,
-        }
+        scores = {'prisoner' : 0, 'helper' : 0}
+        
         total_score = 0
 
-
-
+        # print('Original Map')
+        # env.render()
+        
         while True not in done.values() and True not in truncated.values():
 
             curr_state = curr_state['prisoner']
@@ -86,6 +91,7 @@ def training(config):
 
                     learn_iters += 1 if config['environment_type'] == 'single' else 0.5
             curr_state = next_state
+        # quit()
         score_history.append(total_score)
         score_helper_history.append(scores['helper'])
         score_prisoner_history.append(scores['prisoner'])
@@ -94,9 +100,24 @@ def training(config):
         avg_helper_score = np.mean(score_helper_history[-100:])
         avg_prisoner_score = np.mean(score_prisoner_history[-100:])
 
+        if i > 100 and not changed:
+            best_score = avg_prisoner_score
+            changed = True
+
         if avg_prisoner_score > best_score:
             if i > 10:
+                # print(f'your best score is: {best_score}')
+                # print(f'and your current score is: {avg_prisoner_score}')
                 best_score = avg_prisoner_score
+
+                # Save the best score for next ietration of training 
+                file = open("Python.txt", "w")
+                #convert variable to string
+                str = repr(best_score)
+                file.write(str)
+
+                changed = True
+                
                 for _, agent in agents.items():
                     agent.save_models()
 
@@ -114,11 +135,14 @@ def training(config):
         z = [i+1 for i in range(len(score_helper_history))]
         plot_learning_curve(z, score_helper_history,figure_file['helper'], 'helper')
 
-
+    print(f'best score is: {best_score}')
 
 
 
 if __name__ == '__main__':
+
+    
+
     parser = ArgumentParser()
     parser.add_argument(
         "-e",
@@ -136,15 +160,12 @@ if __name__ == '__main__':
         "saving_steps" : 20,
         "batch_size": 5,
         "epochs": 4,
-        "alpha": 0.0003, # learning rate
-        "clip_ratio": 0.2,
+        "alpha": 0.001, # learning rate
+        "clip_ratio": 0.3,
         "gamma": 0.99,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 300
+        "episodes": 800
     }
-
-    # wandb.init(config=config_defaults, project="adversarialrl", mode="disabled")
-    # config = wandb.config  # important, in case the sweep gives different values
 
 
     training(config)

@@ -8,7 +8,7 @@ import shutil
 
 
 os.system('clear')
-
+            
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument(
@@ -30,7 +30,7 @@ if __name__ == '__main__':
         "clip_ratio": 0.2,
         "gamma": 0.99,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 20
+        "episodes": 1
     }
     
     # Initial settings
@@ -74,13 +74,13 @@ if __name__ == '__main__':
             vals = {}
             action, prob, val = prisoner.choose_action(curr_state)  
             actions = {'prisoner': action}
-            # print(f'Prisoner action: {prisoner_action_map[actions["prisoner"]] }')
+            print(f'Prisoner action: {prisoner_action_map[actions["prisoner"]] }')
             next_state, reward, done, truncated, info = env.step(actions)
-            # print(f'Reward value after taking the action: {reward}')
+            print(f'Reward value after taking the action: {reward}')
             if info['prisoner']:
                 completed +=1
             n_steps += 1
-            # env.render()
+            env.render()
             scores["prisoner"] += reward['prisoner']
             # prisoner.remember(curr_state, action, prob, val, reward, done, truncated)
 
@@ -95,10 +95,10 @@ if __name__ == '__main__':
 
         print(f'episode: {i}, prisoner_score: {avg_prisoner_score}, time_steps: {n_steps}, completed_times: {completed}')
 
-        y = [i+1 for i in range(len(score_prisoner_history))]
-        plot_learning_curve(y, score_prisoner_history,figure_file['prisoner'], 'prisoner')
+        # y = [i+1 for i in range(len(score_prisoner_history))]
+        # plot_learning_curve(y, score_prisoner_history,figure_file['prisoner'], 'prisoner')
 
-    for file in model_files:
-        prefix = './checkpoint_history'
-        target = prefix+file[10:]+f'_{int(completed /config["episodes"]*100)}'
-        shutil.copyfile(file, target)
+    # for file in model_files:
+    #     prefix = './checkpoint_history'
+    #     target = prefix+file[10:]+f'_{int(completed /config["episodes"]*100)}'
+    #     shutil.copyfile(file, target)

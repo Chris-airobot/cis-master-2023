@@ -33,9 +33,10 @@ class SingleEnvironment(ParallelEnv):
         
     def reset(self, seed=None, return_info=False, options=None):
         # print("You are resetting")
-        self.grid = np.zeros((7, 7), dtype=object)
+        self.grid = np.loadtxt('map.txt', dtype=object)
         self.agents = copy(self.possible_agents)
         self.timestep = 0
+  
 
 
         self.prisoner_x = 0
@@ -45,13 +46,10 @@ class SingleEnvironment(ParallelEnv):
 
         self.path = np.zeros(8, dtype=int)
 
-        self.grid, self.visited = map_generation(np.zeros((7, 7), dtype=object),
-                                                 (self.prisoner_x, self.prisoner_y),
-                                                 [],
-                                                 (self.door_x, self.door_y))
         
-        self.bridges = self.visited[:self.visited.index((self.door_x,self.door_y))+1]
+        self.bridges = [list(i) for i in np.loadtxt('bridges.txt', dtype=int)]
 
+        
         observations = {
             a: (
                 self.prisoner_x + 7 * self.prisoner_y,
@@ -121,23 +119,25 @@ class SingleEnvironment(ParallelEnv):
         # print(f'previous distance: {previous_distance}, after_distance: {after_distance}')
         closer = (after_distance - previous_distance)     
         if closer == 0:
-            r_closer = -0.5
+            r_closer = -0.3
         elif closer < 0:
-            r_closer = 0.5
+            r_closer = 0.3
         else: 
             r_closer = -0.3
 
         self.checkPath()
 
-        rewards['prisoner'] = r_closer + r_timeout
+        rewards['prisoner'] = r_closer 
         
 
 
 
         
         # Solver touches the trap
-        if (self.prisoner_x, self.prisoner_y) not in self.bridges:
-            r_ext = -1
+        # print(f'prisoner position: {[self.prisoner_x, self.prisoner_y]}')
+        # print(f'Yes or No ? : {[self.prisoner_x, self.prisoner_y] not in self.bridges}')
+        if [self.prisoner_x, self.prisoner_y] not in self.bridges:
+            r_ext = -2
             # r_inc = 1 if closer else 0 
 
             rewards["prisoner"] += r_ext + r_timeout
@@ -147,18 +147,20 @@ class SingleEnvironment(ParallelEnv):
         elif self.prisoner_x == self.door_x and self.prisoner_y == self.door_y:
             r_ext = 2
             # r_inc = 0.8 if closer else 0 
-            print("Reaches the Goal!")
+            
             infos['prisoner'] = "Completed"
             rewards["prisoner"] += r_ext + r_timeout
+            print(f"Reaches the Goal! your completed reward is {rewards['prisoner']}")
             # rewards = {"prisoner": 1, "helper": -1}
             terminations = {a: True for a in self.agents}
             self.agents = []
 
 
         # Check truncation conditions (overwrites termination conditions)
-        if self.timestep > 100:
-            print("Zan'nen, time out")
+        if self.timestep > 20:
+            
             rewards["prisoner"] += r_timeout
+            print(f"Time out")
             truncations = {"prisoner": True}
             self.agents = []
         self.timestep += 1
@@ -182,14 +184,14 @@ class SingleEnvironment(ParallelEnv):
 
 
     def checkPath(self):
-        self.path[0] = 0 if self.prisoner_x > 0 and (self.prisoner_x-1, self.prisoner_y) not in self.bridges else 1
-        self.path[1] = 0 if self.prisoner_x > 1 and (self.prisoner_x-2, self.prisoner_y) not in self.bridges else 1
-        self.path[2] = 0 if self.prisoner_x < 6 and (self.prisoner_x+1, self.prisoner_y) not in self.bridges else 1
-        self.path[3] = 0 if self.prisoner_x < 5 and (self.prisoner_x+2, self.prisoner_y) not in self.bridges else 1
-        self.path[4] = 0 if self.prisoner_y > 0 and (self.prisoner_x, self.prisoner_y-1) not in self.bridges else 1
-        self.path[5] = 0 if self.prisoner_y > 1 and (self.prisoner_x, self.prisoner_y-2) not in self.bridges else 1
-        self.path[6] = 0 if self.prisoner_y > 6 and (self.prisoner_x, self.prisoner_y+1) not in self.bridges else 1
-        self.path[7] = 0 if self.prisoner_y > 5 and (self.prisoner_x, self.prisoner_y+2) not in self.bridges else 1
+        self.path[0] = 0 if self.prisoner_x > 0 and [self.prisoner_x-1, self.prisoner_y] not in self.bridges else 1
+        self.path[1] = 0 if self.prisoner_x > 1 and [self.prisoner_x-2, self.prisoner_y] not in self.bridges else 1
+        self.path[2] = 0 if self.prisoner_x < 6 and [self.prisoner_x+1, self.prisoner_y] not in self.bridges else 1
+        self.path[3] = 0 if self.prisoner_x < 5 and [self.prisoner_x+2, self.prisoner_y] not in self.bridges else 1
+        self.path[4] = 0 if self.prisoner_y > 0 and [self.prisoner_x, self.prisoner_y-1] not in self.bridges else 1
+        self.path[5] = 0 if self.prisoner_y > 1 and [self.prisoner_x, self.prisoner_y-2] not in self.bridges else 1
+        self.path[6] = 0 if self.prisoner_y > 6 and [self.prisoner_x, self.prisoner_y+1] not in self.bridges else 1
+        self.path[7] = 0 if self.prisoner_y > 5 and [self.prisoner_x, self.prisoner_y+2] not in self.bridges else 1
 
 
 
@@ -197,8 +199,7 @@ class SingleEnvironment(ParallelEnv):
         # grid = np.zeros((7, 7))
 
         for coord in self.bridges:
-            self.grid[coord[0]][coord[1]] = 1
-        # self.grid[np.isin(self.grid, 'S')] = 1
+            self.grid[coord[0]][coord[1]] = '1'
         self.grid[self.prisoner_x][self.prisoner_y] = 'P'
         # grid[self.bridges_y, self.bridges_x] = "G"
         self.grid[self.door_x][self.door_y] = 'D'

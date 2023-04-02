@@ -36,8 +36,11 @@ class ActorNetwork(nn.Module):
     def save_checkpoint(self):
         T.save(self.state_dict(),self.checkpoint_file)
 
-    def load_checkpoint(self):
-        self.load_state_dict(T.load(self.checkpoint_file))
+    def load_checkpoint(self, dir=None):
+        if dir != None:
+            self.load_state_dict(T.load(self.checkpoint_file))
+        else:
+            self.load_state_dict(T.load(self.checkpoint_file))
 
 # Critic is used to evaluate the states, as in this state good, means we did good for last move
 # if this state is bad, it means we chose bad move last time
@@ -67,8 +70,11 @@ class CriticNetwork(nn.Module):
     def save_checkpoint(self):
         T.save(self.state_dict(),self.checkpoint_file)
 
-    def load_checkpoint(self):
-        self.load_state_dict(T.load(self.checkpoint_file))
+    def load_checkpoint(self,dir=None):
+        if dir != None:
+            self.load_state_dict(T.load(self.checkpoint_file))
+        else:
+            self.load_state_dict(T.load(self.checkpoint_file))
 
 # Gamma is from paper, alpha is learning rate, also from paper
 

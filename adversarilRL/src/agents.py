@@ -33,10 +33,10 @@ class Agent:
         self.actor.save_checkpoint()
         self.critic.save_checkpoint()
 
-    def load_models(self):
+    def load_models(self, dir=None):
         print('...loading models...')
-        self.actor.load_checkpoint()
-        self.critic.load_checkpoint()
+        self.actor.load_checkpoint(dir)
+        self.critic.load_checkpoint(dir)
 
     def choose_action(self, observation):
         # print([observation])
