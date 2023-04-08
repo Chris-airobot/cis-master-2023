@@ -68,9 +68,8 @@ class Agent:
                 a_t = 0
                 for k in range(t, len(reward_arr)-1):
                     # small_delta t function
-                    # print(f"dones: {dones_arr}")
                     a_t += discount*(reward_arr[k] + self.gamma*values[k+1]*\
-                            (1-int(dones_arr[k])) - values[k])
+                            (1-int(dones_arr[k])-int(truncated[k])) - values[k])
                     # gamma * big_lambda
                     discount *= self.gamma*self.td_lambda
                 advantage[t] = a_t

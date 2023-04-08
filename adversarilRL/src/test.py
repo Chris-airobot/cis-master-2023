@@ -1,161 +1,121 @@
+import gym
 import numpy as np
-import random
-import time
-import os
+from agents import Agent
 from utils import *
-
+import random
+import os
 os.system('clear')
-# 1. randomly generate a grid, all elements are 0
-# 2. mark the door and the prisoner's coordinates as 1
-# 3. use DFS to generate a path between door and prisoner
 
-class Queue:
-    "A container with a first-in-first-out (FIFO) queuing policy."
-    def __init__(self):
-        self.list = []
+def nullHeuristic(state, problem=None):
+    """
+    A heuristic function estimates the cost from the current state to the nearest
+    goal in the provided SearchProblem.  This heuristic is trivial.
+    """
+    return 0
 
-    def push(self,item):
-        "Enqueue the 'item' into the queue"
-        self.list.insert(0,item)
+def aStarSearch(problem, heuristic=nullHeuristic):
+    """Search the node that has the lowest combined cost and heuristic first."""
+    "*** YOUR CODE HERE ***"
+    i = 0
+    myPQ = PriorityQueue()
+    startState = problem.getStartState()
+    startNode = (startState, '',0, [])
+    myPQ.push(startNode, heuristic(startState, problem))
+    visited = set()
+    best_g = dict()
+    while not myPQ.isEmpty():
+        node = myPQ.pop()
+        state, action, cost, path = node
+        #print(f'Your state is {state}, action is {action}, cost is {cost}, path is {path}')
 
-    def pop(self):
-        """
-          Dequeue the earliest enqueued item still in the queue. This
-          operation removes the item from the queue.
-        """
-        return self.list.pop()
+        if (not state in visited) or cost < best_g.get(state):
+            visited.add(state)
+            best_g[state]=cost
+            #print(f'All right, your best_g is: {best_g[state]}')
 
-    def isEmpty(self):
-        "Returns true if the queue is empty"
-        return len(self.list) == 0
+            i += 1
+            # print(f'For each loop, your state is {state[1]}')
+            # print(f'Right now it is the {i}th loop')
+            if problem.isGoalState(state):
+                path = path + [(state, action)]
+                actions = [action[1] for action in path]
+                del actions[0]
+                return actions
+            for succ in problem.getSuccessors(state):
+                succState, succAction, succCost = succ
+                newNode = (succState, succAction, cost + succCost, path + [(node, action)])
 
+                myPQ.push(newNode,heuristic(succState,problem)+cost+succCost)
 
+def nextState(current):
+    connected_points = []
+    if current[0] > 0:
+        connected_points.append([(current[0]-1, current[1]), 'go up one block'])
+    if current[0] < 6:
+        connected_points.append([(current[0]+1, current[1]), 'go down one block'])
+    if current[1] > 0:
+        connected_points.append([(current[0], current[1]-1), 'go left one block'])
+    if current[1] < 6:
+        connected_points.append([(current[0], current[1]+1), 'go right one block'])
+    if current[0] > 1:
+        connected_points.append([(current[0]-2, current[1]), 'go up two blocks'])
+    if current[0] < 5:
+        connected_points.append([(current[0]+2, current[1]), 'go down two blocks'])
+    if current[1] > 1:
+        connected_points.append([(current[0], current[1]-2), 'go left two blocks'])
+    if current[1] < 5:
+        connected_points.append([(current[0], current[1]+2), 'go right two blocks'])
+    
+    return connected_points 
+
+# BFS to check if map exists the path 
+def BFS(grid: np.array, current: tuple, visited: list, end:tuple):
+    myQ = Queue()
+    # start state
+    visited.append(current)
+    myQ.push([current,[]])
+    print('are you here')
+    # myQ.push(current)
+    while not myQ.isEmpty():
+        coord, actions = myQ.pop()
+        # coord = myQ.pop()
+        
+        if grid[coord[0]][coord[1]] == '1' or grid[coord[0]][coord[1]] == 'G' or grid[coord[0]][coord[1]] == 'P':
+            
+            # print(f'coord is: {coord}')
+            # print(f'end is: {end}')
+            if coord == end:    
+            
+                # print(f"Goal is: {end}")
+                # print(f"There is a path")     
+                return True, actions
+                # return True
+            else:
+                for successor in nextState(coord):
+                    next_state, action = successor
+                    if next_state not in visited:
+                        visited.append(next_state)
+                        myQ.push([next_state, actions+[action]])
+                        # myQ.push(successor)
+
+    return False, []
+
+grid,_ = map_generation()
+
+# grid[prisoner_x][prisoner_y] = grid[door_x][door_y] = 1
+# visited = [(prisoner_x,prisoner_y), (door_x, door_y)]
+visited = []
 prisoner_x = 0
 prisoner_y = 0
 door_x = random.randint(2,5)
 door_y = random.randint(2,5)
-
-grid = np.zeros((7, 7), dtype=object)
-# grid[prisoner_x][prisoner_y] = grid[door_x][door_y] = 1
-# visited = [(prisoner_x,prisoner_y), (door_x, door_y)]
-visited = []
-
-
-def getSuccessors(current):
-    connected_points = []
-    if current[0] > 0:
-        connected_points.append((current[0]-1, current[1]))
-    if current[0] < 6:
-        connected_points.append((current[0]+1, current[1]))
-    if current[1] > 0:
-        connected_points.append((current[0], current[1]-1))
-    if current[1] < 6:
-        connected_points.append((current[0], current[1]+1))
-    if current[0] > 1:
-        connected_points.append((current[0]-2, current[1]))
-    if current[0] < 5:
-        connected_points.append((current[0]+2, current[1]))
-    if current[1] > 1:
-        connected_points.append((current[0], current[1]-2))
-    if current[1] < 5:
-        connected_points.append((current[0], current[1]+2))
-    
-    return connected_points 
-
-
-
-def BFS(grid: np.array, current: tuple, visited: list, end:tuple):
-
-    myQ = Queue()
-    visited.append(current)
-    myQ.push(current)
-    while not myQ.isEmpty():
-        # time.sleep(1)
-        # print(f"Goal is: {end}")
-        # print(f"{grid} \n")  
-        coord = myQ.pop()
-        if grid[coord[0]][coord[1]] == 1 or grid[coord[0]][coord[1]] == 'G' or grid[coord[0]][coord[1]] == 'P':
-            # returned.append(coord)
-            if coord == end:    
-                print(f"Goal is: {end}")
-                print(f"There is a path") 
-                # print(f'length is {len(list(set(returned)))}')    
-                return True
-            else:
-                for successor in getSuccessors(coord):
-                    if successor not in visited:
-                        visited.append(successor)
-                        myQ.push(successor)
-        
-    # print("No valid path")  
-    return False     
-
-
-
-def DFS(grid, current, visited, end):
-    
-    grid[current[0]][current[1]] = '1'
-    # print(f"Goal is: {end}")
-    # print(f"{grid} \n")
-    # time.sleep(1)
-    if grid[end[0]][end[1]] == '1':
-        return
-
-    visited.append(current)
-    # up/down/left/right
-    connected_points = []
-    if current[0] > 0:
-        connected_points.append((current[0]-1, current[1]))
-    if current[0] < 6:
-        connected_points.append((current[0]+1, current[1]))
-    if current[1] > 0:
-        connected_points.append((current[0], current[1]-1))
-    if current[1] < 6:
-        connected_points.append((current[0], current[1]+1))
-    for point in connected_points:
-        if point not in visited:
-            DFS(grid, point, visited, end)
-
-
-# BFS(grid, (prisoner_x, prisoner_y), visited, (door_x, door_y))
-def map_generation(grid:np.array, bridges:list):
-    for i in range(len(grid)):
-        for j in range(len(grid[i])):
-            grid[i][j] = random.randint(0,1)
-            if grid[i][j] == 1:
-                bridges.append((i,j))
-    return grid, bridges
-
-
-
-# print(grid)
-
-# # print(grid)
-
-grid, bridges = map_generation(grid=grid, bridges=[])
-# grid[prisoner_x][prisoner_y] = 'P'
-# grid[door_x][door_y] = 'G'
-# print(grid)
-# print(bridges)
-# print(len(bridges))
-# BFS(grid=grid, current=(prisoner_x, prisoner_y), visited=visited, end=(door_x, door_y), returned=[])
-
-
-# while not map_check(grid, (prisoner_x, prisoner_y), [], (door_x, door_y)):
-#     grid, bridges = map_generation(grid, []) 
-#     np.savetxt('map.txt', grid, fmt='%d')
-#     np.savetxt('bridges.txt', bridges, fmt='%d')
-
-
-print(type(grid))
-
-a = np.loadtxt('map.txt', dtype=int)
-b = np.loadtxt('bridges.txt', dtype=int)
-
-if [0,0] in b:
-    print("hellp")
-
-DFS(grid=grid, current=(0,0), visited=[],end=(door_x, door_y))
-grid[0][0] = 'P'
-grid[door_x][door_y] = 'D'
+grid[prisoner_x][prisoner_y] = 'P'
+grid[door_x][door_y] = 'G'
 print(grid)
+
+correct, value = BFS(grid=grid, current=(prisoner_x, prisoner_y), visited=visited, end=(door_x, door_y))
+if correct:
+    print(f"Yes, it's good, value is: {len(value)}, actions are: {value}")
+else:
+    print('Sorry, try again')
+

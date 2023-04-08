@@ -6,8 +6,8 @@ from torch.distributions.categorical import Categorical
 
 # Actor decides what to do based on the current state
 class ActorNetwork(nn.Module):
-    def __init__(self, n_actions, input_dims, alpha, name, chkpt_dir, fc1_dims=512,
-            fc2_dims=512):
+    def __init__(self, n_actions, input_dims, alpha, name, chkpt_dir, fc1_dims=256,
+            fc2_dims=256):
         # print(f'current directory is {os.getcwd}')
         super(ActorNetwork,self).__init__()
 
@@ -45,7 +45,7 @@ class ActorNetwork(nn.Module):
 # Critic is used to evaluate the states, as in this state good, means we did good for last move
 # if this state is bad, it means we chose bad move last time
 class CriticNetwork(nn.Module):
-    def __init__(self, input_dims, alpha, chkpt_dir, name, fc1_dims = 512, fc2_dims=512):
+    def __init__(self, input_dims, alpha, chkpt_dir, name, fc1_dims = 256, fc2_dims=256):
         super(CriticNetwork,self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'critic_'+name)

@@ -52,7 +52,7 @@ if __name__ == '__main__':
     
 
 
-
+    verbose = True
     best_score = -1000
     score_history = []
     score_helper_history = []
@@ -68,19 +68,29 @@ if __name__ == '__main__':
         scores = {'prisoner' : 0}
 
         while True not in done.values() and True not in truncated.values():
+            
             curr_state = curr_state['prisoner']
+            # if verbose:
+            #     print("Before moving:")
+            #     print(f'Current state is: {curr_state}')
+            #     print(f'map is:')
+            #     env.render()
             actions = {}
             probs = {}
             vals = {}
             action, prob, val = prisoner.choose_action(curr_state)  
             actions = {'prisoner': action}
-            print(f'Prisoner action: {prisoner_action_map[actions["prisoner"]] }')
+            
             next_state, reward, done, truncated, info = env.step(actions)
-            print(f'Reward value after taking the action: {reward}')
+            if verbose:
+                print(f'Prisoner action: {prisoner_action_map[actions["prisoner"]] }')
+                print(f'Reward value after taking the action: {reward}')
+                print("After moving:")
+                env.render()
             if info['prisoner']:
                 completed +=1
             n_steps += 1
-            env.render()
+            
             scores["prisoner"] += reward['prisoner']
             # prisoner.remember(curr_state, action, prob, val, reward, done, truncated)
 
@@ -100,5 +110,12 @@ if __name__ == '__main__':
 
     # for file in model_files:
     #     prefix = './checkpoint_history'
-    #     target = prefix+file[10:]+f'_{int(completed /config["episodes"]*100)}'
+    #     x = int(completed /config["episodes"]*100)
+    #     target = prefix+file[10:]+f'_{x}'
     #     shutil.copyfile(file, target)
+
+    # 19 is the inital model that can run
+    # 24 is the model trained continue on 19
+    # 30 is the model trained continue on 24
+
+    # 27 is the most recent trained one before adding the heursitic function

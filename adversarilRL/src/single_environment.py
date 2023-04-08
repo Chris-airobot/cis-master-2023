@@ -36,24 +36,24 @@ class SingleEnvironment(ParallelEnv):
         self.grid = np.loadtxt('map.txt', dtype=object)
         self.agents = copy(self.possible_agents)
         self.timestep = 0
-  
+        
 
 
         self.prisoner_x = 0
         self.prisoner_y = 0
-        self.door_x = random.randint(2, 5) 
-        self.door_y = random.randint(2, 5)
+        self.door_x, self.door_y = random.choice([(4,2), (4, 3), (4, 4), (4, 5), (4, 6),(5, 0),(5, 3), (5, 4)])
+        # self.total_distance = ((self.prisoner_x - self.door_x) + (self.prisoner_y - self.door_y))/ 12
 
         self.path = np.zeros(8, dtype=int)
-
+        
         
         self.bridges = [list(i) for i in np.loadtxt('bridges.txt', dtype=int)]
-
+        self.checkPath()
         
         observations = {
             a: (
                 self.prisoner_x + 7 * self.prisoner_y,
-                self.door_x + 7 * self.prisoner_y,
+                self.door_x + 7 * self.door_y,
                 self.path[0],self.path[1],  
                 self.path[2],self.path[3],  
                 self.path[4],self.path[5],  
@@ -75,10 +75,9 @@ class SingleEnvironment(ParallelEnv):
 
         prisoner_action = actions["prisoner"]
 
-        previous_distance = np.sqrt((self.prisoner_x - self.door_x)** 2 +
-                                    (self.prisoner_y - self.door_y)** 2)
-        
-        
+        # heuristic_before = 1 - (abs(self.prisoner_x - self.door_x) + abs(self.prisoner_y - self.door_y))/ 12
+        heuristic_before = BFS(self.grid, (self.prisoner_x, self.prisoner_y), [], (self.door_x, self.door_y))
+        # print(f"heursitcs_before: {heuristic_before}")
         # Execute actions   
         # 1 block move: 0 up, 1 down, 2 left, 3 right
         # 2 block move: 4 up, 5 down, 6 left, 7 right
@@ -113,21 +112,22 @@ class SingleEnvironment(ParallelEnv):
         # elif prisoner_action == 4:
             # print("Solver did nothing")
             # pass
-        after_distance = np.sqrt((self.prisoner_x - self.door_x)** 2 +
-                                 (self.prisoner_y - self.door_y)** 2)
-
-        # print(f'previous distance: {previous_distance}, after_distance: {after_distance}')
-        closer = (after_distance - previous_distance)     
-        if closer == 0:
-            r_closer = -0.3
-        elif closer < 0:
-            r_closer = 0.3
-        else: 
-            r_closer = -0.3
+        heuristic_after = BFS(self.grid, (self.prisoner_x, self.prisoner_y), [], (self.door_x, self.door_y))
+        # print(f"heursitcs_after: {heuristic_after}")
+        if heuristic_after >= 0:
+            r_closer = (heuristic_before - heuristic_after) / max(heuristic_after, heuristic_before) * 2 
+        else:
+            r_closer = -1 /heuristic_before * 2 
+        # if closer == 0:
+        #     r_closer = -0.3
+        # elif closer < 0:
+        #     r_closer = 0.3
+        # else: 
+        #     r_closer = -0.3
 
         self.checkPath()
 
-        rewards['prisoner'] = r_closer 
+        rewards['prisoner'] = r_closer if r_closer != 0 else -0.2
         
 
 
@@ -161,6 +161,7 @@ class SingleEnvironment(ParallelEnv):
             
             rewards["prisoner"] += r_timeout
             print(f"Time out")
+            infos['prisoner'] = "out"
             truncations = {"prisoner": True}
             self.agents = []
         self.timestep += 1
@@ -169,7 +170,7 @@ class SingleEnvironment(ParallelEnv):
         observations = {
             a: (
                 self.prisoner_x + 7 * self.prisoner_y,
-                self.door_x + 7 * self.prisoner_y,
+                self.door_x + 7 * self.door_y,
                 self.path[0],self.path[1],  
                 self.path[2],self.path[3],  
                 self.path[4],self.path[5],  
@@ -184,14 +185,22 @@ class SingleEnvironment(ParallelEnv):
 
 
     def checkPath(self):
-        self.path[0] = 0 if self.prisoner_x > 0 and [self.prisoner_x-1, self.prisoner_y] not in self.bridges else 1
-        self.path[1] = 0 if self.prisoner_x > 1 and [self.prisoner_x-2, self.prisoner_y] not in self.bridges else 1
-        self.path[2] = 0 if self.prisoner_x < 6 and [self.prisoner_x+1, self.prisoner_y] not in self.bridges else 1
-        self.path[3] = 0 if self.prisoner_x < 5 and [self.prisoner_x+2, self.prisoner_y] not in self.bridges else 1
-        self.path[4] = 0 if self.prisoner_y > 0 and [self.prisoner_x, self.prisoner_y-1] not in self.bridges else 1
-        self.path[5] = 0 if self.prisoner_y > 1 and [self.prisoner_x, self.prisoner_y-2] not in self.bridges else 1
-        self.path[6] = 0 if self.prisoner_y > 6 and [self.prisoner_x, self.prisoner_y+1] not in self.bridges else 1
-        self.path[7] = 0 if self.prisoner_y > 5 and [self.prisoner_x, self.prisoner_y+2] not in self.bridges else 1
+        # up one
+        self.path[0] = 1 if self.prisoner_x > 0 and [self.prisoner_x-1, self.prisoner_y] in self.bridges else 0
+        # up two
+        self.path[1] = 1 if self.prisoner_x > 1 and [self.prisoner_x-2, self.prisoner_y] in self.bridges else 0
+        # down one
+        self.path[2] = 1 if self.prisoner_x < 6 and [self.prisoner_x+1, self.prisoner_y] in self.bridges else 0
+        # down two
+        self.path[3] = 1 if self.prisoner_x < 5 and [self.prisoner_x+2, self.prisoner_y] in self.bridges else 0
+        # left one
+        self.path[4] = 1 if self.prisoner_y > 0 and [self.prisoner_x, self.prisoner_y-1] in self.bridges else 0
+        # left two
+        self.path[5] = 1 if self.prisoner_y > 1 and [self.prisoner_x, self.prisoner_y-2] in self.bridges else 0
+        # right one
+        self.path[6] = 1 if self.prisoner_y < 6 and [self.prisoner_x, self.prisoner_y+1] in self.bridges else 0
+        # right two
+        self.path[7] = 1 if self.prisoner_y < 5 and [self.prisoner_x, self.prisoner_y+2] in self.bridges else 0
 
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-
+import heapq
 
 
 
@@ -59,6 +59,8 @@ def plot_learning_curve(x, scores, figure_file, name):
     plt.title(f'Running average of previous 100 {name} scores')
     plt.savefig(figure_file)
 
+
+# BFS to check if map exists the path 
 def map_check(grid: np.array, current: tuple, visited: list, end:tuple):
     myQ = Queue()
     visited.append(current)
@@ -79,7 +81,56 @@ def map_check(grid: np.array, current: tuple, visited: list, end:tuple):
     # print("No valid path")  
     return False    
 
-def map_generation(grid:np.array, bridges:list):
+
+# BFS to check if map exists the path 
+def BFS(grid: np.array, current: tuple, visited: list, end:tuple):
+    myQ = Queue()
+    # start state
+    # print(f'Current is: {current}')
+    visited.append(current)
+    myQ.push([current,[]])
+    # myQ.push(current)
+    while not myQ.isEmpty():
+        coord, actions = myQ.pop()
+        # coord = myQ.pop()
+       
+        if grid[coord[0]][coord[1]] == '1' or grid[coord[0]][coord[1]] == 'D' or grid[coord[0]][coord[1]] == 'P':
+            # print(f'coord is: {coord}')
+            
+            # print(f'end is: {end}')
+            if coord == end:    
+                # print('are you here')
+                # print(f"Goal is: {end}")
+                # print(f"There is a path")     
+                return len(actions)
+                # return True
+            else:
+                for successor in nextState(coord):
+                    
+                    next_state, action = successor
+                    if next_state not in visited:
+                        visited.append(next_state)
+                        myQ.push([next_state, actions+[action]])
+                        # myQ.push(successor)
+
+    return -1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def map_generation():
+    bridges = []
+    grid = np.zeros((7, 7), dtype=object)
     for i in range(len(grid)):
         for j in range(len(grid[i])):
             grid[i][j] = random.randint(0,1)
@@ -109,3 +160,87 @@ def getSuccessors(current):
         connected_points.append((current[0], current[1]+2))
     
     return connected_points 
+
+
+
+
+
+
+
+def nextState(current):
+    connected_points = []
+    if current[0] > 0:
+        connected_points.append([(current[0]-1, current[1]), 'go up one block'])
+    if current[0] < 6:
+        connected_points.append([(current[0]+1, current[1]), 'go down one block'])
+    if current[1] > 0:
+        connected_points.append([(current[0], current[1]-1), 'go left one block'])
+    if current[1] < 6:
+        connected_points.append([(current[0], current[1]+1), 'go right one block'])
+    if current[0] > 1:
+        connected_points.append([(current[0]-2, current[1]), 'go up two blocks'])
+    if current[0] < 5:
+        connected_points.append([(current[0]+2, current[1]), 'go down two blocks'])
+    if current[1] > 1:
+        connected_points.append([(current[0], current[1]-2), 'go left two blocks'])
+    if current[1] < 5:
+        connected_points.append([(current[0], current[1]+2), 'go right two blocks'])
+    
+    return connected_points 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class PriorityQueue:
+    """
+      Implements a priority queue data structure. Each inserted item
+      has a priority associated with it and the client is usually interested
+      in quick retrieval of the lowest-priority item in the queue. This
+      data structure allows O(1) access to the lowest-priority item.
+    """
+    def  __init__(self):
+        self.heap = []
+        self.count = 0
+
+    def push(self, item, priority):
+        entry = (priority, self.count, item)
+        heapq.heappush(self.heap, entry)
+        self.count += 1
+
+    def pop(self):
+        (_, _, item) = heapq.heappop(self.heap)
+        return item
+
+    def isEmpty(self):
+        return len(self.heap) == 0
+
+    def update(self, item, priority):
+        # If item already in priority queue with higher priority, update its priority and rebuild the heap.
+        # If item already in priority queue with equal or lower priority, do nothing.
+        # If item not in priority queue, do the same thing as self.push.
+        for index, (p, c, i) in enumerate(self.heap):
+            if i == item:
+                if p <= priority:
+                    break
+                del self.heap[index]
+                self.heap.append((priority, c, item))
+                heapq.heapify(self.heap)
+                break
+        else:
+            self.push(item, priority)

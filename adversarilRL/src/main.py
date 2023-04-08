@@ -20,14 +20,14 @@ def training(config):
                    input_dims=env.observation_space().shape,
                    chkpt_dir='checkpoint/' + config['environment_type'],
                    name='helper')
-        # agents['helper'].load_models()
+        agents['helper'].load_models()
 
     agents['prisoner'] = Agent(env.action_space().n, 
                                config=config,
                                input_dims=env.observation_space().shape,
                                chkpt_dir='checkpoint/' + config['environment_type'],
                                name='prisoner')
-    # agents['prisoner'].load_models()
+    agents['prisoner'].load_models()
  
     figure_file = {
         'total': 'plots/' + config['environment_type'] + '/total.png',
@@ -76,7 +76,7 @@ def training(config):
                 vals[k] = val 
             # print(f'raw action value is: {actions}') 
             # print(f'Prisoner action: {prisoner_action_map[actions["prisoner"]] }')
-            next_state, reward, done, truncated, _ = env.step(actions)
+            next_state, reward, done, truncated, infos = env.step(actions)
             # print(f'Reward value after taking the action: {reward}')
             n_steps += 1
             # env.render()
@@ -86,26 +86,30 @@ def training(config):
                 total_score += scores[k]
                 agent.remember(curr_state, actions[k], probs[k], vals[k], reward[k], done[k], truncated[k])
                         
-                if n_steps % config['saving_steps'] == 0:
+                if n_steps % config['saving_steps'] == 0 and not truncated['prisoner']:
+
+                    # print("you learned!")
+                    # print(f'Is it time out? {infos["prisoner"]}')
                     agent.learn()
+                    
 
                     learn_iters += 1 if config['environment_type'] == 'single' else 0.5
             curr_state = next_state
         # quit()
-        score_history.append(total_score)
-        score_helper_history.append(scores['helper'])
+        # score_history.append(total_score)
+        # score_helper_history.append(scores['helper'])
         score_prisoner_history.append(scores['prisoner'])
 
         # avg_score = np.mean(score_history[-100:])
         avg_helper_score = np.mean(score_helper_history[-100:])
         avg_prisoner_score = np.mean(score_prisoner_history[-100:])
 
-        if i > 100 and not changed:
-            best_score = avg_prisoner_score
-            changed = True
+        # if i > 100 and not changed:
+        #     best_score = avg_prisoner_score
+        #     changed = True
 
         if avg_prisoner_score > best_score:
-            if i > 10:
+            if i > 50:
                 # print(f'your best score is: {best_score}')
                 # print(f'and your current score is: {avg_prisoner_score}')
                 best_score = avg_prisoner_score
@@ -121,7 +125,7 @@ def training(config):
                 for _, agent in agents.items():
                     agent.save_models()
 
-        print(f'episode: {i}, helper_score: {avg_helper_score}, prisoner_score: {avg_prisoner_score}, time_steps: {n_steps}, learning_steps: {learn_iters}')
+        print(f'episode: {i}, score: {scores["prisoner"]}, avg_score: {avg_prisoner_score}, time_steps: {n_steps}, learning_steps: {learn_iters}')
         
 
         # Plots
@@ -160,11 +164,11 @@ if __name__ == '__main__':
         "saving_steps" : 20,
         "batch_size": 5,
         "epochs": 4,
-        "alpha": 0.001, # learning rate
-        "clip_ratio": 0.3,
+        "alpha": 3e-4, # learning rate
+        "clip_ratio": 0.2,
         "gamma": 0.99,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 800
+        "episodes": 750
     }
 
 
