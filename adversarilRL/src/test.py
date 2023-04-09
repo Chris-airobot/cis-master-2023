@@ -101,5 +101,7 @@ def BFS(grid: np.array, current: tuple, visited: list, end:tuple):
     return False, []
 
 
-solver_only = [38, 40, 37, 33, 51, 31, 44, 43, 32, 38]
-print(np.average(solver_only)/300)
+
+
+
+    

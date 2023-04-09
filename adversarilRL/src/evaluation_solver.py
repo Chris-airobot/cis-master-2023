@@ -30,7 +30,7 @@ if __name__ == '__main__':
         "clip_ratio": 0.2,
         "gamma": 0.99,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 300
+        "episodes": 1
     }
     
     # Initial settings
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     
 
 
-    verbose = False
+    verbose = True
 
     score_history = []
     score_helper_history = []
@@ -70,11 +70,6 @@ if __name__ == '__main__':
         while True not in done.values() and True not in truncated.values():
             
             curr_state = curr_state['prisoner']
-            # if verbose:
-            #     print("Before moving:")
-            #     print(f'Current state is: {curr_state}')
-            #     print(f'map is:')
-            #     env.render()
             actions = {}
             probs = {}
             vals = {}
@@ -105,8 +100,7 @@ if __name__ == '__main__':
 
         print(f'episode: {i}, prisoner_score: {avg_prisoner_score}, time_steps: {n_steps}, completed_times: {completed}')
 
-        # y = [i+1 for i in range(len(score_prisoner_history))]
-        # plot_learning_curve(y, score_prisoner_history,figure_file['prisoner'], 'prisoner')
+
 
     # for file in model_files:
     #     prefix = './checkpoint_history'
@@ -114,8 +108,6 @@ if __name__ == '__main__':
     #     target = prefix+file[10:]+f'_{x}'
     #     shutil.copyfile(file, target)
 
-    # 19 is the inital model that can run
-    # 24 is the model trained continue on 19
-    # 30 is the model trained continue on 24
-
-    # 27 is the most recent trained one before adding the heursitic function
+    # 85 is the trained agent after using the new heuristic, loaded map with np.choice goal
+    # 30 is the model trained before using the heuristic, loaded map with np.choice goal
+    # 93 is the agent that is trained on the map with all bridges

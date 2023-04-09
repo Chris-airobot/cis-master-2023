@@ -22,10 +22,10 @@ helper_action_map = {
     1 : "Helper builds down 2 blocks", 
     2 : "Helper builds left 2 blocks", 
     3 : "Helper builds right 2 blocks", 
-    4 : "Helper builds up 1 block away", 
-    5 : "Helper builds down 1 block away", 
-    6 : "Helper builds left 1 block away", 
-    7 : "Helper builds right 1 block away", 
+    4 : "Helper builds up 1 block", 
+    5 : "Helper builds down 1 block", 
+    6 : "Helper builds left 1 block", 
+    7 : "Helper builds right 1 block", 
 } 
 
 
@@ -83,25 +83,14 @@ def map_check(grid: np.array, current: tuple, visited: list, end:tuple):
 # BFS to check if map exists the path 
 def BFS(grid: np.array, current: tuple, visited: list, end:tuple):
     myQ = Queue()
-    # start state
-    # print(f'Current is: {current}')
     visited.append(current)
     myQ.push([current,[]])
-    # myQ.push(current)
     while not myQ.isEmpty():
         coord, actions = myQ.pop()
-        # coord = myQ.pop()
        
         if grid[coord[0]][coord[1]] == '1' or grid[coord[0]][coord[1]] == 'D' or grid[coord[0]][coord[1]] == 'P':
-            # print(f'coord is: {coord}')
-            
-            # print(f'end is: {end}')
             if coord == end:    
-                # print('are you here')
-                # print(f"Goal is: {end}")
-                # print(f"There is a path")     
                 return len(actions)
-                # return True
             else:
                 for successor in nextState(coord):
                     
@@ -109,7 +98,6 @@ def BFS(grid: np.array, current: tuple, visited: list, end:tuple):
                     if next_state not in visited:
                         visited.append(next_state)
                         myQ.push([next_state, actions+[action]])
-                        # myQ.push(successor)
 
     return -1
 

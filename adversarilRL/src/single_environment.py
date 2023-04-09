@@ -157,7 +157,7 @@ class SingleEnvironment(ParallelEnv):
         if self.timestep > 20:
             rewards["prisoner"] += r_timeout
             print(f"Time out")
-            infos['prisoner'] = "out"
+            # infos['prisoner'] = "out"
             truncations = {"prisoner": True}
             self.agents = []
         self.timestep += 1

@@ -13,19 +13,25 @@ from utils import *
 class DoubleEnvironment(ParallelEnv):
     metadata = {"render_modes": ["human"], "name": "rps_v2"}
     def __init__(self, render_mode=None):
-        
+        # goal coordinates
         self.door_x = None
         self.door_y = None
+        # prisoner coordinates
         self.prisoner_x = None
         self.prisoner_y = None
+        # helper coordinates
         self.helper_x = None
         self.helper_y = None
+        # # helper latest generated block coordinates 
+        # self.generated_block_x = None
+        # self.generated_block_y = None
 
         # 0 for trap, 1 for bridge
         self.path = np.zeros(8, dtype=int)
         self.timestep = None
         self.possible_agents = ["prisoner", "helper"]
         self.grid = None
+        self.discount_factor = 0.99
 
 
         self.auxiliary = 1
@@ -36,21 +42,30 @@ class DoubleEnvironment(ParallelEnv):
         self.grid = np.zeros((7, 7), dtype=object)
         self.agents = copy(self.possible_agents)
         self.timestep = 0
+        self.discount_factor = 0.99
 
-
-        self.bridges = [(0,0)]
+        # a list contains all the moveable blocks
+        self.bridges = [[0,0]]
+        # prisoner coordinates
         self.prisoner_x = 0
         self.prisoner_y = 0
+        # helper coordinates
         self.helper_x = 0
         self.helper_y = 0
+        # # helper latest generated block coordinates 
+        # self.generated_block_x = 0
+        # self.generated_block_y = 0
+        # goal coordinates
         self.door_x = random.randint(2, 5) 
         self.door_y = random.randint(2, 5)
+
+        
 
         # "path" contains the condition for blocks that are 
         #  all possible for agent to move 
         self.path = np.zeros(8, dtype=int)
         # "bridges" are all indexs of the brdges in the map
-        self.bridges.append((self.door_x, self.door_y))
+        self.bridges.append([self.door_x, self.door_y])
 
         self.checkPath()
 
@@ -69,6 +84,9 @@ class DoubleEnvironment(ParallelEnv):
 
 
     def step(self, actions):
+        self.helper_x = self.prisoner_x
+        self.helper_y = self.prisoner_y
+
         # Initialize all variables for return
         terminations = {a: False for a in self.agents}
         truncations = {a: False for a in self.possible_agents}
@@ -77,80 +95,79 @@ class DoubleEnvironment(ParallelEnv):
 
         prisoner_action = actions["prisoner"]
         helper_action = actions["helper"]
+        
 
-        solver_h1 = BFS(self.grid, (self.prisoner_x, self.prisoner_y), [], (self.door_x, self.door_y))
+        # If there does not exist a path, then the heuristic value is -1, else the value is number of steps need to take
+        # solver_h1 = BFS(self.grid, (self.prisoner_x, self.prisoner_y), [], (self.door_x, self.door_y))
 
+        # Manhattan Distance before the solver moves, potential function 
+        potential_1 = 1 - (abs(self.prisoner_x - self.door_x) + abs(self.prisoner_y - self.door_y)) / 12 
 
 
         # 0-3 building up/down/left/right two blocks in a row
         # 4-7 building up/down/left/right one block
+        generated = 0
         if helper_action == 0 and self.helper_x > 1:
             self.grid[self.prisoner_x-1][self.prisoner_y] = 1
             self.grid[self.prisoner_x-2][self.prisoner_y] = 1
-            self.bridges.extend(((self.prisoner_x-1, self.prisoner_y),
-                                (self.prisoner_x-2, self.prisoner_y)))
-            self.helper_x = self.prisoner_x-2
-            self.helper_y = self.prisoner_y
+            self.bridges.extend(([self.prisoner_x-1, self.prisoner_y],
+                                 [self.prisoner_x-2, self.prisoner_y]))
+            
+            self.helper_x -= 2
+            generated = 2
             # print("Helper builds up 2 blocks")
         elif helper_action == 1 and self.prisoner_x < 5:
             self.grid[self.prisoner_x+1][self.prisoner_y] = 1
             self.grid[self.prisoner_x+2][self.prisoner_y] = 1
-            self.bridges.extend(((self.prisoner_x+1, self.prisoner_y),
-                                (self.prisoner_x+2, self.prisoner_y)))
-            self.helper_x = self.prisoner_x+2
-            self.helper_y = self.prisoner_y
+            self.bridges.extend(([self.prisoner_x+1, self.prisoner_y],
+                                 [self.prisoner_x+2, self.prisoner_y]))
+            self.helper_x += 2
+            generated = 2
             # print("Helper builds down 2 blocks")
         elif helper_action == 2 and self.prisoner_y > 1:
             self.grid[self.prisoner_x][self.prisoner_y-1] = 1
             self.grid[self.prisoner_x][self.prisoner_y-2] = 1
             self.bridges.extend(((self.prisoner_x, self.prisoner_y-1),
                                 (self.prisoner_x, self.prisoner_y-2)))
-            self.helper_x = self.prisoner_x
-            self.helper_y = self.prisoner_y-2
+            self.helper_y -= 2
+            generated = 2
             # print("Helper builds left 2 blocks")
         elif helper_action == 3 and self.prisoner_y < 5:
             self.grid[self.prisoner_x][self.prisoner_y+1] = 1
             self.grid[self.prisoner_x][self.prisoner_y+2] = 1
-            self.bridges.extend(((self.prisoner_x,self.prisoner_y+1),
-                                (self.prisoner_x,self.prisoner_y+2)))
-            self.helper_x = self.prisoner_x
-            self.helper_y = self.prisoner_y+2
+            self.bridges.extend(([self.prisoner_x,self.prisoner_y+1],
+                                 [self.prisoner_x,self.prisoner_y+2]))
+            self.helper_y += 2
+            generated = 2
             # print("Helper builds right 2 blocks")
         elif helper_action == 4 and self.helper_x > 0:
             self.grid[self.prisoner_x-1][self.prisoner_y] = 1
-            self.bridges.append((self.prisoner_x-1, self.prisoner_y))
-            self.helper_x = self.prisoner_x-1
-            self.helper_y = self.prisoner_y
+            self.bridges.append([self.prisoner_x-1, self.prisoner_y])
+            self.helper_x -= 1
+            generated = 1
             # print("Helper builds up 1 block")
-        elif helper_action == 1 and self.prisoner_x < 6:
+        elif helper_action == 5 and self.prisoner_x < 6:
             self.grid[self.prisoner_x+1][self.prisoner_y] = 1
-            self.bridges.append((self.prisoner_x+1, self.prisoner_y))
-            self.helper_x = self.prisoner_x+1
-            self.helper_y = self.prisoner_y
+            self.bridges.append([self.prisoner_x+1, self.prisoner_y])
+            self.helper_x += 1
+            generated = 1
             # print("Helper builds down 1 block")
-        elif helper_action == 2 and self.prisoner_y > 0:
+        elif helper_action == 6 and self.prisoner_y > 0:
             self.grid[self.prisoner_x][self.prisoner_y-1] = 1
-            self.bridges.append((self.prisoner_x, self.prisoner_y-1))
-            self.helper_x = self.prisoner_x
-            self.helper_y = self.prisoner_y-1
+            self.bridges.append([self.prisoner_x, self.prisoner_y-1])
+            self.helper_y -= 1
+            generated = 1
             # print("Helper builds left 1 block")
-        elif helper_action == 3 and self.prisoner_y < 6:
+        elif helper_action == 7 and self.prisoner_y < 6:
             self.grid[self.prisoner_x][self.prisoner_y+1] = 1
-            self.bridges.append((self.prisoner_x, self.prisoner_y+1))
-            self.helper_x = self.prisoner_x
-            self.helper_y = self.prisoner_y+1
+            self.bridges.append([self.prisoner_x, self.prisoner_y+1])
+            self.helper_y += 1
+            generated = 1
             # print("Helper builds right 1 block")
-        else:
-            # print(helper_action)
-            created = False
-            # print("Helper did nothing")
 
 
 
-        
 
-        previous_distance = np.sqrt((self.prisoner_x - self.door_x)** 2 +
-                                    (self.prisoner_x - self.door_y)** 2)
         
         
         # Execute actions   
@@ -183,48 +200,66 @@ class DoubleEnvironment(ParallelEnv):
             self.prisoner_y += 2
 
 
-        # elif prisoner_action == 4:
-            # print("Solver did nothing")
-            # pass
-        after_distance = np.sqrt((self.prisoner_x - self.door_x)** 2 +
-                                 (self.prisoner_x - self.door_y)** 2)
+        alpha = 1
+        beta = 1
 
-        # print(f'previous distance: {previous_distance}, after_distance: {after_distance}')
-        closer = (after_distance - previous_distance) < 0    
 
+        # Manhattan Distance after the solver moves, potential function after the movement
+        potential_2 = 1 - (abs(self.prisoner_x - self.door_x) + abs(self.prisoner_y - self.door_y)) / 12 
+
+        
+        potential_helper = 1 - (abs(self.helper_x - self.door_x) + abs(self.helper_y - self.door_y)) / 12 
+
+
+        r_timeout = -self.timestep * 0.03
+
+        # Solver's normal reward
+        r_closer = (self.discount_factor * potential_2 - potential_1) * 2  
+        rewards["prisoner"] = r_closer + r_timeout
+
+        
+        
+        # Generator's normal reward's part 1, solver gets closer
+        r_external = r_closer if r_closer > 0 else -0.1
+
+        # Generator's normal reward's part 2, generator created blocks
+        # r_internal = 0.2 * generated if generated != 0 else -0.2
+        r_internal = (self.discount_factor * potential_helper - potential_1) * 2
+        
+        rewards["helper"] = (r_external * alpha + r_internal * beta) * self.auxiliary + r_timeout
 
         self.checkPath()
 
 
-        if created:
-            r_int = -0.2
-        else:
-            r_int = -0.2
+
+            
 
         # Solver touches the trap
-        if (self.prisoner_x, self.prisoner_y) not in self.bridges:
-            r_ext = -2
-            r_inc = 1 if closer else 0 
-            r_prisoner = r_ext*self.auxiliary + r_inc + r_int*self.auxiliary
-            rewards = {"prisoner": r_ext, "helper": r_prisoner}
+        if [self.prisoner_x, self.prisoner_y] not in self.bridges:
+            r_fail = -2
+            rewards["prisoner"] += r_fail 
+            # Extenal part
+            rewards["helper"] += r_fail * self.auxiliary
+
             terminations = {a: True for a in self.agents}
             self.agents = []
         # Solver reach the goal
         elif self.prisoner_x == self.door_x and self.prisoner_y == self.door_y:
-            r_ext = 2
-            r_inc = 0.8 if closer else 0 
-            r_prisoner = r_ext*self.auxiliary + r_inc + r_int*self.auxiliary
+            r_complete = 2
+            rewards["prisoner"] += r_complete 
+            # Extenal part
+            rewards["helper"] += r_complete * self.auxiliary
+            infos['prisoner'] = "Completed"
             print("Reaches the Goal!")
-            
-            rewards = {"prisoner": r_ext, "helper": r_prisoner}
-            # rewards = {"prisoner": 1, "helper": -1}
             terminations = {a: True for a in self.agents}
             self.agents = []
 
 
         # Check truncation conditions (overwrites termination conditions)
-        if self.timestep > 100:
-            rewards = {"prisoner": 0, "helper": 0}
+        if self.timestep > 20:
+            rewards["prisoner"] += r_timeout 
+            rewards["helper"] += r_timeout
+            print("Time out")
             truncations = {"prisoner": True, "helper": True}
             self.agents = []
         self.timestep += 1
@@ -271,11 +306,15 @@ class DoubleEnvironment(ParallelEnv):
         # grid = np.zeros((7, 7))
 
         for coord in self.bridges:
-            self.grid[coord[0]][coord[1]] = 1
-        # self.grid[np.isin(self.grid, 'S')] = 1
-        self.grid[self.prisoner_x][self.prisoner_y] = 'S'
-        # grid[self.bridges_y, self.bridges_x] = "G"
-        self.grid[self.door_x][self.door_y] = 'E'
+            self.grid[coord[0]][coord[1]] = '1'        
+        self.grid[self.prisoner_x][self.prisoner_y] = 'P'
+        self.grid[self.door_x][self.door_y] = 'D'
+
+        for x in range(len(self.grid)):
+            for y in range(len(self.grid[x])):
+                if self.grid[x][y] == 0:
+                    self.grid[x][y] = '0'
+
         print(f"{self.grid} \n")
 
     @functools.lru_cache(maxsize=None)
@@ -291,4 +330,4 @@ from pettingzoo.test import parallel_api_test # noqa: E402
 from pettingzoo.test import render_test
 if __name__ == "__main__":
     parallel_api_test(DoubleEnvironment(), num_cycles=1_000_000)
-    # render_test(DoubleEnvironment)ss
+ 
