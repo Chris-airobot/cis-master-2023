@@ -66,3 +66,26 @@ They used two types of feedback:
  ## Environment Updates:
  1. Prisoner should have actions of up/down/left/right one/two block(s), which is size of 8
  2. Generator has actions of generate two block(s) up/down/left/right in a row or one block away from the standing point, which is size of 8
+
+
+# Week 6:
+## Evaluation Method
+- Single agent only with fixed start point (0,0)  
+- Goal is randomly generated in the center, both x, y are [2,5], integer only.
+- The map is newly generated, and guarenteed that there will be a solution
+
+## Solver only implementation Updates
+ - Idea 1: Map only contains bridges, varying goal position
+    - The training result is quite good, (method is Mahattan distance only) but the agent is not good since it does not know the case when there are traps
+- Idea 2: Dynamic map, each episode has a different random map
+    - The training result is very bad, potentially because that the reward function is too simple
+- Idea 3: Randomly generated a map, and store it into a file. Then test the trained agent on dynamic generated maps, the value is __12.9%__. (Training 10 rounds, 300 episodes each)
+
+## Next step is the implementation of the helper
+- Potential idea could be:
+    - Put the trained agent inside
+    - Let the auxiliary input equal to 1, i.e. for the easy mode generation
+    - Map is all zeros
+    - Check if the generator will generates "easy" mode for the solver
+
+- Next could be that let the auxiliary input equal to -1, for the hard mode

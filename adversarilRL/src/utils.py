@@ -68,9 +68,7 @@ def map_check(grid: np.array, current: tuple, visited: list, end:tuple):
     while not myQ.isEmpty():
         coord = myQ.pop()
         if grid[coord[0]][coord[1]] == 1 or grid[coord[0]][coord[1]] == 'G' or grid[coord[0]][coord[1]] == 'P':
-            if coord == end:    
-                # print(f"Goal is: {end}")
-                # print(f"There is a path")     
+            if coord == end:     
                 return True
             else:
                 for successor in getSuccessors(coord):
@@ -116,26 +114,22 @@ def BFS(grid: np.array, current: tuple, visited: list, end:tuple):
     return -1
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-def map_generation():
+def map_generation(prisoner_x, prisoner_y, door_x, door_y):
     bridges = []
     grid = np.zeros((7, 7), dtype=object)
     for i in range(len(grid)):
         for j in range(len(grid[i])):
             grid[i][j] = random.randint(0,1)
             if grid[i][j] == 1:
-                bridges.append((i,j))
+                bridges.append([i,j])
+
+    grid[prisoner_x][prisoner_y] = 1
+    grid[door_x][door_y] = 1
+
+    if (prisoner_x,prisoner_y) not in grid:
+        bridges.append([prisoner_x,prisoner_y])
+    if (door_x,door_y) not in grid:
+        bridges.append([door_x,door_y])
     return grid, bridges
 
 

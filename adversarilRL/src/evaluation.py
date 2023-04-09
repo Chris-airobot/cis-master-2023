@@ -30,7 +30,7 @@ if __name__ == '__main__':
         "clip_ratio": 0.2,
         "gamma": 0.99,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 1
+        "episodes": 300
     }
     
     # Initial settings
@@ -52,8 +52,8 @@ if __name__ == '__main__':
     
 
 
-    verbose = True
-    best_score = -1000
+    verbose = False
+
     score_history = []
     score_helper_history = []
     score_prisoner_history = []

@@ -100,22 +100,6 @@ def BFS(grid: np.array, current: tuple, visited: list, end:tuple):
 
     return False, []
 
-grid,_ = map_generation()
 
-# grid[prisoner_x][prisoner_y] = grid[door_x][door_y] = 1
-# visited = [(prisoner_x,prisoner_y), (door_x, door_y)]
-visited = []
-prisoner_x = 0
-prisoner_y = 0
-door_x = random.randint(2,5)
-door_y = random.randint(2,5)
-grid[prisoner_x][prisoner_y] = 'P'
-grid[door_x][door_y] = 'G'
-print(grid)
-
-correct, value = BFS(grid=grid, current=(prisoner_x, prisoner_y), visited=visited, end=(door_x, door_y))
-if correct:
-    print(f"Yes, it's good, value is: {len(value)}, actions are: {value}")
-else:
-    print('Sorry, try again')
-
+solver_only = [38, 40, 37, 33, 51, 31, 44, 43, 32, 38]
+print(np.average(solver_only)/300)

@@ -18,12 +18,8 @@ class SingleEnvironment(ParallelEnv):
         self.door_y = None
         self.prisoner_x = None
         self.prisoner_y = None
-
         # 0 for trap, 1 for bridge
         self.path = np.zeros(8, dtype=int)
-
-
-
         self.timestep = None
         self.possible_agents = ["prisoner"]
         self.grid = None
@@ -32,8 +28,16 @@ class SingleEnvironment(ParallelEnv):
 
         
     def reset(self, seed=None, return_info=False, options=None):
-        # print("You are resetting")
-        self.grid = np.loadtxt('map.txt', dtype=object)
+        # For training
+        # self.grid = np.loadtxt('map.txt', dtype=object)
+        # self.bridges = [list(i) for i in np.loadtxt('bridges.txt', dtype=int)]
+        # self.door_x, self.door_y = random.choice([(4,2), (4, 3), (4, 4), (4, 5), (4, 6),(5, 0),(5, 3), (5, 4)])
+        checked = False
+        # For testing
+        
+
+
+
         self.agents = copy(self.possible_agents)
         self.timestep = 0
         
@@ -41,13 +45,21 @@ class SingleEnvironment(ParallelEnv):
 
         self.prisoner_x = 0
         self.prisoner_y = 0
-        self.door_x, self.door_y = random.choice([(4,2), (4, 3), (4, 4), (4, 5), (4, 6),(5, 0),(5, 3), (5, 4)])
-        # self.total_distance = ((self.prisoner_x - self.door_x) + (self.prisoner_y - self.door_y))/ 12
+        
+        self.door_x = random.randint(2,5)
+        self.door_y = random.randint(2,5)
 
-        self.path = np.zeros(8, dtype=int)
+             
         
-        
-        self.bridges = [list(i) for i in np.loadtxt('bridges.txt', dtype=int)]
+        while not checked:
+            self.grid, self.bridges = map_generation(self.prisoner_x, 
+                                                     self.prisoner_y,
+                                                     self.door_x, 
+                                                     self.door_y)
+            
+            checked = map_check(self.grid,(self.prisoner_x, self.prisoner_y), [], (self.door_x, self.door_y))
+
+        self.path = np.zeros(8, dtype=int)   
         self.checkPath()
         
         observations = {
@@ -61,23 +73,20 @@ class SingleEnvironment(ParallelEnv):
             )
             for a in self.agents
         }
+
         return observations
 
     def step(self, actions):
-        # Check terminate conditions
+        # Initialize all variables for return
         terminations = {a: False for a in self.agents}
         truncations = {a: False for a in self.possible_agents}
         infos = {a: "" for a in self.possible_agents}
         rewards = {a: 0 for a in self.agents}
-        # closer = False
-        # created = True
-        r_timeout = -self.timestep * 0.03
-
+    
+        
         prisoner_action = actions["prisoner"]
-
-        # heuristic_before = 1 - (abs(self.prisoner_x - self.door_x) + abs(self.prisoner_y - self.door_y))/ 12
         heuristic_before = BFS(self.grid, (self.prisoner_x, self.prisoner_y), [], (self.door_x, self.door_y))
-        # print(f"heursitcs_before: {heuristic_before}")
+
         # Execute actions   
         # 1 block move: 0 up, 1 down, 2 left, 3 right
         # 2 block move: 4 up, 5 down, 6 left, 7 right
@@ -109,56 +118,43 @@ class SingleEnvironment(ParallelEnv):
 
         
 
-        # elif prisoner_action == 4:
-            # print("Solver did nothing")
-            # pass
         heuristic_after = BFS(self.grid, (self.prisoner_x, self.prisoner_y), [], (self.door_x, self.door_y))
-        # print(f"heursitcs_after: {heuristic_after}")
+
+        # If the solver moves to the trap , it gets the negatve reward
         if heuristic_after >= 0:
             r_closer = (heuristic_before - heuristic_after) / max(heuristic_after, heuristic_before) * 2 
         else:
             r_closer = -1 /heuristic_before * 2 
-        # if closer == 0:
-        #     r_closer = -0.3
-        # elif closer < 0:
-        #     r_closer = 0.3
-        # else: 
-        #     r_closer = -0.3
 
+        # The function that fills in the "path" in observation
         self.checkPath()
 
         rewards['prisoner'] = r_closer if r_closer != 0 else -0.2
-        
+
+        # Aims to make the solver moves as fast as possible
+        r_timeout = -self.timestep * 0.03
 
 
 
         
         # Solver touches the trap
-        # print(f'prisoner position: {[self.prisoner_x, self.prisoner_y]}')
-        # print(f'Yes or No ? : {[self.prisoner_x, self.prisoner_y] not in self.bridges}')
         if [self.prisoner_x, self.prisoner_y] not in self.bridges:
             r_ext = -2
-            # r_inc = 1 if closer else 0 
-
             rewards["prisoner"] += r_ext + r_timeout
             terminations = {a: True for a in self.agents}
             self.agents = []
         # Solver reach the goal
         elif self.prisoner_x == self.door_x and self.prisoner_y == self.door_y:
-            r_ext = 2
-            # r_inc = 0.8 if closer else 0 
-            
+            r_ext = 2         
             infos['prisoner'] = "Completed"
             rewards["prisoner"] += r_ext + r_timeout
-            print(f"Reaches the Goal! your completed reward is {rewards['prisoner']}")
-            # rewards = {"prisoner": 1, "helper": -1}
+            print(f"Reaches the Goal! prisoner's reward for this step is {rewards['prisoner']}")
             terminations = {a: True for a in self.agents}
             self.agents = []
 
 
         # Check truncation conditions (overwrites termination conditions)
         if self.timestep > 20:
-            
             rewards["prisoner"] += r_timeout
             print(f"Time out")
             infos['prisoner'] = "out"
@@ -209,9 +205,15 @@ class SingleEnvironment(ParallelEnv):
 
         for coord in self.bridges:
             self.grid[coord[0]][coord[1]] = '1'
+        
         self.grid[self.prisoner_x][self.prisoner_y] = 'P'
         # grid[self.bridges_y, self.bridges_x] = "G"
         self.grid[self.door_x][self.door_y] = 'D'
+
+        for x in range(len(self.grid)):
+            for y in range(len(self.grid[x])):
+                if self.grid[x][y] == 0:
+                    self.grid[x][y] = '0'
         print(f"{self.grid} \n")
 
     @functools.lru_cache(maxsize=None)

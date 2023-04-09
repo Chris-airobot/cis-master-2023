@@ -6,7 +6,7 @@ from gymnasium.spaces import Discrete, MultiDiscrete
 
 from pettingzoo.utils.env import ParallelEnv
 from pettingzoo import ParallelEnv
-
+from utils import *
 
 
 
@@ -23,14 +23,10 @@ class DoubleEnvironment(ParallelEnv):
 
         # 0 for trap, 1 for bridge
         self.path = np.zeros(8, dtype=int)
-
-        self.bridges = [(0,0)]
-
-
         self.timestep = None
         self.possible_agents = ["prisoner", "helper"]
-        self.grid = np.zeros((7, 7), dtype=object)
-        # self.show = np.zeros((7, 7), dtype=object)
+        self.grid = None
+
 
         self.auxiliary = 1
 
@@ -50,12 +46,13 @@ class DoubleEnvironment(ParallelEnv):
         self.door_x = random.randint(2, 5) 
         self.door_y = random.randint(2, 5)
 
+        # "path" contains the condition for blocks that are 
+        #  all possible for agent to move 
         self.path = np.zeros(8, dtype=int)
+        # "bridges" are all indexs of the brdges in the map
         self.bridges.append((self.door_x, self.door_y))
-        # self.grid[0][0] = 1
-        # self.grid[self.door_x][self.door_y] = 1
 
-        # self.path.append((self.escape_x, self.escape_y))
+        self.checkPath()
 
         observations = {
             a: (
@@ -70,13 +67,20 @@ class DoubleEnvironment(ParallelEnv):
         }
         return observations
 
+
     def step(self, actions):
-        # print(actions)
-        closer = False
-        created = True
+        # Initialize all variables for return
+        terminations = {a: False for a in self.agents}
+        truncations = {a: False for a in self.possible_agents}
+        rewards = {a: 0 for a in self.agents}
+        infos = {a: {} for a in self.possible_agents}
 
         prisoner_action = actions["prisoner"]
         helper_action = actions["helper"]
+
+        solver_h1 = BFS(self.grid, (self.prisoner_x, self.prisoner_y), [], (self.door_x, self.door_y))
+
+
 
         # 0-3 building up/down/left/right two blocks in a row
         # 4-7 building up/down/left/right one block
@@ -191,10 +195,6 @@ class DoubleEnvironment(ParallelEnv):
 
         self.checkPath()
 
-        # Check terminate conditions
-        terminations = {a: False for a in self.agents}
-        truncations = {a: False for a in self.possible_agents}
-        rewards = {a: 0 for a in self.agents}
 
         if created:
             r_int = -0.2
@@ -242,20 +242,28 @@ class DoubleEnvironment(ParallelEnv):
             for a in self.possible_agents
         }
 
-        infos = {a: {} for a in self.possible_agents}
+        
 
         return observations, rewards, terminations, truncations, infos
 
 
     def checkPath(self):
-        self.path[0] = 0 if self.prisoner_x > 0 and (self.prisoner_x-1, self.prisoner_y) not in self.bridges else 1
-        self.path[1] = 0 if self.prisoner_x > 1 and (self.prisoner_x-2, self.prisoner_y) not in self.bridges else 1
-        self.path[2] = 0 if self.prisoner_x < 6 and (self.prisoner_x+1, self.prisoner_y) not in self.bridges else 1
-        self.path[3] = 0 if self.prisoner_x < 5 and (self.prisoner_x+2, self.prisoner_y) not in self.bridges else 1
-        self.path[4] = 0 if self.prisoner_y > 0 and (self.prisoner_x, self.prisoner_y-1) not in self.bridges else 1
-        self.path[5] = 0 if self.prisoner_y > 1 and (self.prisoner_x, self.prisoner_y-2) not in self.bridges else 1
-        self.path[6] = 0 if self.prisoner_y > 6 and (self.prisoner_x, self.prisoner_y+1) not in self.bridges else 1
-        self.path[7] = 0 if self.prisoner_y > 5 and (self.prisoner_x, self.prisoner_y+2) not in self.bridges else 1
+        # up one
+        self.path[0] = 1 if self.prisoner_x > 0 and [self.prisoner_x-1, self.prisoner_y] in self.bridges else 0
+        # up two
+        self.path[1] = 1 if self.prisoner_x > 1 and [self.prisoner_x-2, self.prisoner_y] in self.bridges else 0
+        # down one
+        self.path[2] = 1 if self.prisoner_x < 6 and [self.prisoner_x+1, self.prisoner_y] in self.bridges else 0
+        # down two
+        self.path[3] = 1 if self.prisoner_x < 5 and [self.prisoner_x+2, self.prisoner_y] in self.bridges else 0
+        # left one
+        self.path[4] = 1 if self.prisoner_y > 0 and [self.prisoner_x, self.prisoner_y-1] in self.bridges else 0
+        # left two
+        self.path[5] = 1 if self.prisoner_y > 1 and [self.prisoner_x, self.prisoner_y-2] in self.bridges else 0
+        # right one
+        self.path[6] = 1 if self.prisoner_y < 6 and [self.prisoner_x, self.prisoner_y+1] in self.bridges else 0
+        # right two
+        self.path[7] = 1 if self.prisoner_y < 5 and [self.prisoner_x, self.prisoner_y+2] in self.bridges else 0
 
 
 
