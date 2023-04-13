@@ -30,7 +30,7 @@ if __name__ == '__main__':
         "clip_ratio": 0.2,
         "gamma": 0.99,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 300
+        "episodes": 1
     }
     
     # Initial settings
@@ -40,10 +40,8 @@ if __name__ == '__main__':
     name2 = 'prisoner'
     model_files = [chkpt_dir+'/critic_'+name1, chkpt_dir+'/actor_'+name1, 
                    chkpt_dir+'/critic_'+name2, chkpt_dir+'/actor_'+name2]
-    
     # Creating environment 
     env = DoubleEnvironment()
-    
     prisoner = Agent(env.action_space().n,
                      config=config,
                      input_dims=env.observation_space().shape,
@@ -63,8 +61,8 @@ if __name__ == '__main__':
     
     agents = {'prisoner': prisoner, 'helper': helper}
 
-    verbose = False
-
+    verbose = True
+    interactive = False
     score_history = []
     score_helper_history = []
     score_prisoner_history = []
@@ -81,13 +79,23 @@ if __name__ == '__main__':
         while True not in done.values() and True not in truncated.values():
             curr_state = curr_state['prisoner']
             actions = {}
-            probs = {}
-            vals = {}
-            for k, agent in agents.items():
-                action, prob, val = agent.choose_action(curr_state)   
-                actions[k] = action
-                probs[k] = prob
-                vals[k] = val 
+            if not interactive:
+                for k, agent in agents.items():
+                    action, prob, val = agent.choose_action(curr_state)   
+                    # if k == 'helper':
+                    #     action = 6
+                    actions[k] = action
+            else:
+                print("What is the action of the Prisoner?")
+                print("0: up 1, 1: down 1, 2: left 1, 3: right 1")
+                print("4: up 2, 5: down 2, 6: left 2, 7: right 2")
+                prisoner_action = int(input())
+                print("What is the action of the Helper?")
+                print("0: up 2, 1: down 2, 2: left 2, 3: right 2")
+                print("4: up 1, 5: down 1, 6: left 1, 7: right 1")
+                helper_action = int(input())
+                actions['helper'] = helper_action
+                actions['prisoner'] = prisoner_action
             next_state, reward, done, truncated, info = env.step(actions)
             
             if verbose:
@@ -95,7 +103,7 @@ if __name__ == '__main__':
                 print(f'Helper Reward value after taking the action: {reward["helper"]}')
                 print(f'Prisoner action: {prisoner_action_map[actions["prisoner"]] }')
                 print(f'Prisoner Reward value after taking the action: {reward["prisoner"]}')
-                print("After actions:")
+                # print("After actions:")
                 env.render()
 
             if info['prisoner']:
@@ -124,6 +132,5 @@ if __name__ == '__main__':
     #     target = prefix+file[10:]+f'_{x}'
     #     shutil.copyfile(file, target)
 
-    # 85 is the trained agent after using the new heuristic, loaded map with np.choice goal
-    # 30 is the model trained before using the heuristic, loaded map with np.choice goal
-    # 93 is the agent that is trained on the map with all bridges
+    # 45 is the trained model with a potential good success rate but no time outs 
+    # 97 is the model that trained good in the end, but has some time outss

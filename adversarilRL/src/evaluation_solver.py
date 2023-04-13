@@ -15,7 +15,7 @@ if __name__ == '__main__':
         "-e",
         "--environment_type",
         dest="environment_type",
-        default="single",
+        default="adversarial",
         metavar='',
         help="options: adversarial, single, collaborative, adversarial_interaction",
     )
@@ -35,8 +35,8 @@ if __name__ == '__main__':
     
     # Initial settings
     figure_file = {'prisoner': 'plots/' + config['environment_type'] +'/prisoner.png',}
-    chkpt_dir = 'checkpoint/' + config['environment_type']
-    name='prisoner'
+    chkpt_dir = 'checkpoint_history/' + config['environment_type']
+    name='prisoner_45'
     model_files = [chkpt_dir+'/critic_'+name, chkpt_dir+'/actor_'+name]
     
     # Creating environment 

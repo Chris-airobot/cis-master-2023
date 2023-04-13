@@ -8,9 +8,8 @@ from torch.distributions.categorical import Categorical
 class ActorNetwork(nn.Module):
     def __init__(self, n_actions, input_dims, alpha, name, chkpt_dir, fc1_dims=256,
             fc2_dims=256):
-        # print(f'current directory is {os.getcwd}')
         super(ActorNetwork,self).__init__()
-
+        self.n_actions = n_actions
         self.checkpoint_file = os.path.join(chkpt_dir, 'actor_'+name)
         self.actor = nn.Sequential(
             nn.Linear(*input_dims, fc1_dims),
@@ -19,6 +18,7 @@ class ActorNetwork(nn.Module):
             nn.ReLU(),
             nn.Linear(fc2_dims, n_actions),
             nn.Softmax(dim=-1)
+            # nn.Tanh()
         )
         # print(self.actor)
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
@@ -32,6 +32,12 @@ class ActorNetwork(nn.Module):
         dist = Categorical(dist)
 
         return dist
+    # def forward(self, state):
+    #     dist = self.actor(state)
+    #     mean = dist[:, :self.n_actions]
+    #     log_var = dist[:, self.n_actions:]
+
+    #     return mean, log_var
 
     def save_checkpoint(self):
         T.save(self.state_dict(),self.checkpoint_file)

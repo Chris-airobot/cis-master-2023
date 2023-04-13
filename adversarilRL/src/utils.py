@@ -15,6 +15,7 @@ prisoner_action_map = {
     5 : "Prisoner moves down 2 blocks", 
     6 : "Prisoner moves left 2 blocks", 
     7 : "Prisoner moves right 2 blocks", 
+    8 : "Prisoner does not move"
 } 
 
 helper_action_map = {
@@ -26,6 +27,7 @@ helper_action_map = {
     5 : "Helper builds down 1 block", 
     6 : "Helper builds left 1 block", 
     7 : "Helper builds right 1 block", 
+    8 : "Helper does not build"
 } 
 
 

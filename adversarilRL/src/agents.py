@@ -51,6 +51,27 @@ class Agent:
         value = T.squeeze(value).item()
 
         return action,probs,value
+    
+    # def choose_action(self, observation):
+    #     state = T.tensor([observation], dtype=T.float).to(self.actor.device)
+
+    #     mean, log_var = self.actor(state)
+    #     std = T.exp(0.5*log_var)
+    #     normal = T.distributions.Normal(mean, std)
+    #     action = normal.rsample()
+
+    #     log_prob = normal.log_prob(action).sum(dim=-1, keepdim=True)
+    #     log_prob -= T.log(1 - T.pow(action, 2) + 1e-6).sum(dim=-1, keepdim=True)
+    #     log_prob = log_prob.mean()
+
+    #     value = self.critic(state)
+
+    #     action = action.squeeze().detach().cpu().numpy()
+    #     value = value.squeeze().detach().cpu().numpy()
+
+    #     return action, log_prob, value
+
+        
 
     def learn(self):
         for _ in range(self.n_epochs):
