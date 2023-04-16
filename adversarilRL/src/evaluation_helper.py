@@ -99,9 +99,9 @@ if __name__ == '__main__':
             next_state, reward, done, truncated, info = env.step(actions)
             
             if verbose:
-                print(f'Helper action: {helper_action_map[actions["helper"]] }')
+                print(f'{helper_action_map[actions["helper"]]}, {info["helper"]}')
                 print(f'Helper Reward value after taking the action: {reward["helper"]}')
-                print(f'Prisoner action: {prisoner_action_map[actions["prisoner"]] }')
+                print(f'{prisoner_action_map[actions["prisoner"]]}, {info["prisoner"]}')
                 print(f'Prisoner Reward value after taking the action: {reward["prisoner"]}')
                 # print("After actions:")
                 env.render()

@@ -15,7 +15,7 @@ if __name__ == '__main__':
         "-e",
         "--environment_type",
         dest="environment_type",
-        default="adversarial",
+        default="single",
         metavar='',
         help="options: adversarial, single, collaborative, adversarial_interaction",
     )
@@ -30,13 +30,13 @@ if __name__ == '__main__':
         "clip_ratio": 0.2,
         "gamma": 0.99,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 1
+        "episodes": 300
     }
     
     # Initial settings
     figure_file = {'prisoner': 'plots/' + config['environment_type'] +'/prisoner.png',}
     chkpt_dir = 'checkpoint_history/' + config['environment_type']
-    name='prisoner_45'
+    name='prisoner_85'
     model_files = [chkpt_dir+'/critic_'+name, chkpt_dir+'/actor_'+name]
     
     # Creating environment 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     
 
 
-    verbose = True
+    verbose = False
 
     score_history = []
     score_helper_history = []

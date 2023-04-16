@@ -4,6 +4,9 @@ import random
 import heapq
 
 
+REWARD_INDEX = 4
+DONE_INDEX = 5
+TRUNCATED_INDEX = 6
 
 
 prisoner_action_map = {
@@ -11,10 +14,10 @@ prisoner_action_map = {
     1 : "Prisoner moves down 1 block", 
     2 : "Prisoner moves left 1 block", 
     3 : "Prisoner moves right 1 block", 
-    4 : "Prisoner moves up 2 blocks", 
-    5 : "Prisoner moves down 2 blocks", 
-    6 : "Prisoner moves left 2 blocks", 
-    7 : "Prisoner moves right 2 blocks", 
+    4 : "Prisoner jumps up 2 blocks", 
+    5 : "Prisoner jumps down 2 blocks", 
+    6 : "Prisoner jumps left 2 blocks", 
+    7 : "Prisoner jumps right 2 blocks", 
     8 : "Prisoner does not move"
 } 
 
@@ -23,11 +26,15 @@ helper_action_map = {
     1 : "Helper builds down 2 blocks", 
     2 : "Helper builds left 2 blocks", 
     3 : "Helper builds right 2 blocks", 
-    4 : "Helper builds up 1 block", 
-    5 : "Helper builds down 1 block", 
-    6 : "Helper builds left 1 block", 
-    7 : "Helper builds right 1 block", 
-    8 : "Helper does not build"
+    4 : "Helper jumps up 1 block", 
+    5 : "Helper jumps down 1 block", 
+    6 : "Helper jumps left 1 block", 
+    7 : "Helper jumps right 1 block", 
+    8 : "Helper builds up 1 block", 
+    9 : "Helper builds down 1 block", 
+    10 : "Helper builds left 1 block", 
+    11 : "Helper builds right 1 block", 
+    12 : "Helper does not build"
 } 
 
 

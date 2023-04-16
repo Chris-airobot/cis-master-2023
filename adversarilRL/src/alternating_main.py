@@ -2,39 +2,40 @@
 import numpy as np
 from agents import Agent
 from utils import *
-from double_environment import DoubleEnvironment
+from alternating_env import AlternatingEnv
 from single_environment import SingleEnvironment
 from argparse import ArgumentParser
 import os
 
 os.system('clear')
-
+# cwd = os.getcwd()
+# print(f"Current working directory: {cwd}")
 first = False
 
 
 def training(config):
-    agents = {}
+    
     if config['environment_type'] == 'single':
         env = SingleEnvironment()
     else:
-        env = DoubleEnvironment()
-        agents['helper'] = Agent(env.action_space().n, 
+        env = AlternatingEnv()
+        helper = Agent(env.action_space().n, 
                    config=config,
                    input_dims=env.observation_space().shape,
                    chkpt_dir='checkpoint/' + config['environment_type'],
                    name='helper')
     
         if not first:
-            agents['helper'].load_models()
+            helper.load_models()
 
-    agents['prisoner'] = Agent(env.action_space().n, 
+    prisoner = Agent(env.action_space().n, 
                                config=config,
                                input_dims=env.observation_space().shape,
                             #    chkpt_dir='checkpoint/' + config['environment_type'],
                                chkpt_dir='checkpoint/' + config['environment_type'],
                                name='prisoner')
     if not first:
-        agents['prisoner'].load_models()
+        prisoner.load_models()
  
     figure_file = {
         'prisoner': 'plots/' + config['environment_type'] +'/prisoner.png',
@@ -42,68 +43,100 @@ def training(config):
     }
 
     # Read best score from previous training
-    f = open('prisoner.txt', 'r')
+    f = open('src/saved_files/prisoner.txt', 'r')
     if f.mode=='r':
         contents= f.read()
     prisoner_best_score = float(contents)
     
-    f = open('helper.txt', 'r')
+    f = open('src/saved_files/helper.txt', 'r')
     if f.mode=='r':
         contents= f.read()
     helper_best_score = float(contents)
 
-    changed = False
     score_helper_history = []
     score_prisoner_history = []
-    learn_iters = 0
+
+    memories = {
+        'prisoner': None,
+        'helper': None
+    }
     n_steps = 0
-    saved = 0
+    learn_iters = 0
+    properties = {
+        'prisoner': {
+            'score': 0,
+            'saved': 0,
+        },
+        'helper':{
+            'score': 0,
+            'saved': 0,
+        }
+    }
+
 
     for i in range(config['episodes']):
-        done = {}
-        truncated = {}
+        done = False
+        truncated = False
+        prisoner_action_done = False
+
+        properties['prisoner']['score'] = 0
+        properties['helper']['score'] = 0
+
+        # helper first
         curr_state = env.reset()
-        for key in agents.keys():
-            done[key] = False
-            truncated[key] = False
-        scores = {'prisoner' : 0, 'helper' : 0}
         
-        while True not in done.values() and True not in truncated.values():
-            curr_state = curr_state['prisoner']
-            actions = {}
-            probs = {}
-            vals = {}
-            for k, agent in agents.items():
-                action, prob, val = agent.choose_action(curr_state)   
-                actions[k] = action
-                probs[k] = prob
-                vals[k] = val 
-            next_state, reward, done, truncated, _ = env.step(actions)
-            n_steps += 1
-            
-            for k, agent in agents.items():
-                scores[k] += reward[k]
-                agent.remember(curr_state, actions[k], probs[k], vals[k], reward[k], done[k], truncated[k])
-                        
-                if n_steps % config['saving_steps'] == 0 and not truncated['prisoner'] and not truncated['helper']:
+        while not done and not truncated:
+            env.current_agent = 1 - env.current_agent
 
-                    # print("you learned!")
-                    # print(f'Is it time out? {infos["prisoner"]}')
-                    agent.learn()
-                    
+            if env.current_agent == 0:
+                action, prob, val = prisoner.choose_action(curr_state) 
+                next_state, reward, done, truncated, _ = env.step(action)
+                memories['prisoner'] = [curr_state, action, prob, val, reward, done, truncated]
+                prisoner_action_done = True
 
-                    learn_iters += 1 if config['environment_type'] == 'single' else 0.5
+            else:
+                action, prob, val = helper.choose_action(curr_state) 
+                next_state, reward, done, truncated, _ = env.step(action)
+                memories['helper'] = [curr_state, action, prob, val, reward, done, truncated]
+
+
+
+            # both prisoner and helper has executed action once
+            if prisoner_action_done:
+                
+                
+
+                # give external rewards for the helper if the prisoner terminate the environment
+                if memories['prisoner'][DONE_INDEX]:
+                    memories['helper'][REWARD_INDEX] += -2 * -1
+                else:
+                    memories['helper'][REWARD_INDEX] += memories['prisoner'][REWARD_INDEX] * 2
+
+                prisoner.remember(*memories['prisoner'])
+                helper.remember(*memories['helper'])
+
+                properties['prisoner']['score'] += memories['prisoner'][REWARD_INDEX]
+                properties['helper']['score'] += memories['helper'][REWARD_INDEX]
+                n_steps += 1
+
+                if n_steps % config['saving_steps'] == 0 and not memories['prisoner'][TRUNCATED_INDEX]:
+                    prisoner.learn()
+                    helper.learn()
+                    learn_iters += 1
+
+                prisoner_action_done = False
+
+
+
             curr_state = next_state
-
-        score_helper_history.append(scores['helper'])
-        score_prisoner_history.append(scores['prisoner'])
+  
+        score_helper_history.append(properties['helper']['score'])
+        score_prisoner_history.append(properties['prisoner']['score'])
 
         avg_helper_score = np.mean(score_helper_history[-100:])
         avg_prisoner_score = np.mean(score_prisoner_history[-100:])
 
-        # if i > 100 and not changed:
-        #     best_score = avg_prisoner_score
-        #     changed = True
+
         if not first:
             prepare = 50
         else:
@@ -114,35 +147,33 @@ def training(config):
                 prisoner_best_score = avg_prisoner_score
 
                 # Save the best score for next ietration of training 
-                file = open("prisoner.txt", "w")
+                file = open("src/saved_files/prisoner.txt", "w")
                 #convert variable to string
                 str = repr(prisoner_best_score)
                 file.write(str)
+                properties['prisoner']['saved'] += 1     
 
-                changed = True
-                saved += 1                
-                agents['prisoner'].save_models()
+                prisoner.save_models()
 
         if avg_helper_score > helper_best_score:
             if i > prepare:
                 helper_best_score = avg_helper_score
 
                 # Save the best score for next ietration of training 
-                file = open("helper.txt", "w")
+                file = open("src/saved_files/helper.txt", "w")
                 #convert variable to string
                 str = repr(helper_best_score)
                 file.write(str)
-
-                changed = True
-                saved += 1
-                agents['helper'].save_models() 
+                properties['helper']['saved'] += 1
+                helper.save_models() 
 
         
         print(f'====================================== Episode: {i} ======================================')
-        print(f'Prisoner_score: {scores["prisoner"]}, avg_score: {avg_prisoner_score}')
+        print(f'Prisoner_score: {properties["prisoner"]["score"]}, avg_score: {avg_prisoner_score}')
         if config['environment_type'] != 'single':
-            print(f'Helper_score: {scores["helper"]}, avg_score: {avg_helper_score}')
-        print(f'time_steps: {n_steps}, learning_steps: {learn_iters}, model_saving: {saved}')
+            print(f'Helper_score: {properties["helper"]["score"]}, avg_score: {avg_helper_score}')
+        print(f'time_steps: {n_steps}, learning_steps: {learn_iters}')
+        print(f'prisoner_model_saving: {properties["prisoner"]["saved"]}, helper_model_saving: {properties["helper"]["saved"]}')
         print(f'========================================================================================\n')
         
 
@@ -175,9 +206,9 @@ if __name__ == '__main__':
         "saving_steps" : 20,
         "batch_size": 5,
         "epochs": 4,
-        "alpha": 3e-4, # learning rate
+        "alpha": 5e-4, # learning rate
         "clip_ratio": 0.2,
-        "gamma": 0.99,   # discount factor
+        "gamma": 0.95,   # discount factor
         "td_lambda": 0.95,
         "episodes": 750
     }
