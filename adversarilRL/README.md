@@ -89,3 +89,12 @@ They used two types of feedback:
     - Check if the generator will generates "easy" mode for the solver
 
 - Next could be that let the auxiliary input equal to -1, for the hard mode
+
+# Week 7:
+- Create an environment that contains the generator only to see if the reward setting is working (the solve reward part could be use some artificial values, i.e. a trained well agent or bad agent, something like this.)
+    - More specifically: give generator random choosen reward values from a list to represent the reward comes from the solver. Like a list of 10, 7 values are 0.1, 3 values are -0.1, something like this.
+- Got blocks right now, consider doing the implementation of generating the whole map first.
+
+- Setting seems right now: 
+    - The sepearted helper generate *hard* maps when the auxiliary input is -1.
+    - Next is trying the *simple* map, and in the end, combine everything together

@@ -4,8 +4,8 @@ import torch as T
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions.categorical import Categorical
-from memory import PPOMemory
-from networks import ActorNetwork, CriticNetwork
+from src.memory import PPOMemory
+from src.networks import ActorNetwork, CriticNetwork
 
 
 # Gamma is from paper, alpha is learning rate, also from paper

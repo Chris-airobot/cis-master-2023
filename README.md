@@ -44,3 +44,33 @@ Procedural Content Generation
 ## Meeting summary:
 1. Change the way of applying "Interaction", for now, considering do it by swapping game difficulties
 2. Creating a module diagram for different methods of interaction 
+
+
+# Week 6:
+Skip Meeting
+
+# Week 7:
+## Meeting summary:
+1. Implementing the idea that the generator creates the whole environment first, then solver starts solving the environment.
+2. Try Q learning to see how the action is choosing 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Learning sources in the future:
+ - book: "Deep Reinforcement Learning" by Sergey Levine.
+
+ - book: "Learning ROS for Robotics Programming" by Enrique Fernandez and Luis Sanchez Crespo 

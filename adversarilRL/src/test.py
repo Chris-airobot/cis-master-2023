@@ -1,27 +1,19 @@
+from utils import *
 
 
+def checkGoal(generator_x, door_x, generator_y, door_y):
+        if abs(generator_x - door_x) < 3 and generator_y == door_y:
+            return True
+        elif abs(generator_y - door_y) < 3 and generator_x == door_x:
+            return True
+        else:
+            return False
 
-# Define PPO agents
-# agents = []
-# for agent_id in env.agent_iter():
-#     actor = build_actor(env.observation_spaces[agent_id].shape,
-#                         env.action_spaces[agent_id].shape)
-#     critic = build_critic(env.observation_spaces[agent_id].shape)
-#     agent = PPOAgent(env.observation_spaces[agent_id], env.action_spaces[agent_id],
-#                      actor=actor, critic=critic)
-#     agents.append(agent)
 
-# # Train agents
-# for episode in range(num_episodes):
-#     obs = env.reset()
-#     done = False
-#     while not done:
-#         actions = {}
-#         for agent_id, agent in zip(env.agent_iter(), agents):
-#             actions[agent_id] = agent.act(obs[agent_id])
-#         next_obs, rewards, done, info = env.step(actions)
-#         for agent_id, agent in zip(env.agent_iter(), agents):
-#             agent.observe(obs[agent_id], actions[agent_id], rewards[agent_id],
-#                           next_obs[agent_id], done)
-#         obs = next_obs
-
+hell = 's'
+generator_x = 2 
+generator_y = 5 
+door_x = 4 
+door_y = 4 
+if checkGoal(generator_x, door_x, generator_y, door_y):
+     print('Helo')

@@ -34,50 +34,50 @@ if __name__ == '__main__':
     }
     
     # Initial settings
-    figure_file = {'helper': 'plots/' + config['environment_type'] +'/helper.png',}
+    figure_file = {'generator': 'plots/' + config['environment_type'] +'/generator.png',}
     chkpt_dir = 'checkpoint/' + config['environment_type']
-    name1 = 'helper'
-    name2 = 'prisoner'
+    name1 = 'generator'
+    name2 = 'solver'
     model_files = [chkpt_dir+'/critic_'+name1, chkpt_dir+'/actor_'+name1, 
                    chkpt_dir+'/critic_'+name2, chkpt_dir+'/actor_'+name2]
     # Creating environment 
     env = AlternatingEnv()
-    prisoner = Agent(env.action_space().n,
+    solver = Agent(env.action_space().n,
                      config=config,
                      input_dims=env.observation_space().shape,
                      chkpt_dir='checkpoint/' + config['environment_type'],
-                     name='prisoner')
+                     name='solver')
 
-    prisoner.load_models()
+    solver.load_models()
     
-    helper = Agent(env.action_space().n, 
+    generator = Agent(env.action_space().n, 
                    config=config,
                    input_dims=env.observation_space().shape,
                    chkpt_dir='checkpoint/' + config['environment_type'],
-                   name='helper')
+                   name='generator')
 
-    helper.load_models()
+    generator.load_models()
 
     
-    agents = {'prisoner': prisoner, 'helper': helper}
+    agents = {'solver': solver, 'generator': generator}
 
     verbose = True
     interactive = False
     # score_history = []
-    score_helper_history = []
-    score_prisoner_history = []
+    score_generator_history = []
+    score_solver_history = []
     completed = 0
     avg_score = 0
     n_steps = 0
 
     properties = {
-        'prisoner': {
+        'solver': {
             'learn_iters': 0,
             'n_steps': 0,
             'score': 0,
             'saved': 0
         },
-        'helper':{
+        'generator':{
             'learn_iters': 0,
             'n_steps': 0,
             'score': 0,
@@ -90,17 +90,17 @@ if __name__ == '__main__':
         done = False
         truncated = False
 
-        properties['prisoner']['score'] = 0
-        properties['helper']['score'] = 0
+        properties['solver']['score'] = 0
+        properties['generator']['score'] = 0
 
-        # helper first
+        # generator first
         curr_state = env.reset()
         
         while not done and not truncated:
             env.current_agent = 1 - env.current_agent
 
             if env.current_agent == 0:
-                action, prob, val = prisoner.choose_action(curr_state) 
+                action, prob, val = solver.choose_action(curr_state) 
                 if interactive:
                     print("What is the action of the Prisoner?")
                     print("0: up 1, 1: down 1, 2: left 1, 3: right 1")
@@ -108,19 +108,17 @@ if __name__ == '__main__':
                     action = int(input())
 
                 next_state, reward, done, truncated, info = env.step(action)
-                properties['prisoner']['score'] += reward
-                properties['prisoner']['n_steps'] += 1
+                properties['solver']['score'] += reward
+                properties['solver']['n_steps'] += 1
 
                 if verbose:
-                    print(f'{prisoner_action_map[action]}, {info["prisoner"]}')
+                    print(f'{solver_action_map[action]}, {info["solver"]}')
                     print(f'Prisoner Reward value after taking the action: {reward}')
                     # print("After actions:")
                     env.render()
 
-
-
             else:
-                action, prob, val = helper.choose_action(curr_state) 
+                action, prob, val = generator.choose_action(curr_state) 
                 if interactive:
                     print("What is the action of the Helper?")
                     print("0: up 2, 1: down 2, 2: left 2, 3: right 2")
@@ -128,11 +126,11 @@ if __name__ == '__main__':
                     action = int(input())
 
                 next_state, reward, done, truncated, info = env.step(action)
-                properties['helper']['score'] += reward
-                properties['helper']['n_steps'] += 1
+                properties['generator']['score'] += reward
+                properties['generator']['n_steps'] += 1
 
                 if verbose:
-                    print(f'{helper_action_map[action]}, {info["helper"]}')
+                    print(f'{generator_action_map[action]}, {info["generator"]}')
                     print(f'Helper Reward value after taking the action: {reward}')
                     # print("After actions:")
                     env.render()
@@ -140,14 +138,14 @@ if __name__ == '__main__':
 
             curr_state = next_state
   
-        score_helper_history.append(properties['helper']['score'])
-        # score_prisoner_history.append(properties['prisoner']['score'])
+        score_generator_history.append(properties['generator']['score'])
+        # score_solver_history.append(properties['solver']['score'])
 
-        avg_helper_score = np.mean(score_helper_history[-100:])
-        # avg_prisoner_score = np.mean(score_prisoner_history[-100:])
+        avg_generator_score = np.mean(score_generator_history[-100:])
+        # avg_solver_score = np.mean(score_solver_history[-100:])
 
 
-        print(f'episode: {i}, score: {avg_helper_score} avg_helper_score: {avg_helper_score}, time_steps: {n_steps}, completed_times: {completed}')
+        print(f'episode: {i}, score: {avg_generator_score} avg_generator_score: {avg_generator_score}, time_steps: {n_steps}, completed_times: {completed}')
 
 
 

@@ -9,7 +9,7 @@ DONE_INDEX = 5
 TRUNCATED_INDEX = 6
 
 
-prisoner_action_map = {
+solver_action_map = {
     0 : "Prisoner moves up 1 block", 
     1 : "Prisoner moves down 1 block", 
     2 : "Prisoner moves left 1 block", 
