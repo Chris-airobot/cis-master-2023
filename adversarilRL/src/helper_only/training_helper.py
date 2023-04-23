@@ -11,7 +11,7 @@ from argparse import ArgumentParser
 os.system('clear')
 # cwd = os.getcwd()
 # print(f"Current working directory: {cwd}")
-first = True
+first = False
 
 if first:
     file = open("src/saved_files/helper.txt", "w")

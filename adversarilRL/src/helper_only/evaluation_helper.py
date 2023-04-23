@@ -24,7 +24,7 @@ if __name__ == '__main__':
         "-e",
         "--environment_type",
         dest="environment_type",
-        default="helper_only",
+        default="adversarial",
         metavar='',
         help="options: adversarial, single, collaborative, adversarial_interaction",
     )

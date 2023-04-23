@@ -32,7 +32,7 @@ class GeneratorEnv(ParallelEnv):
         self.discount_factor = 0.99
 
 
-        self.auxiliary = 1
+        self.auxiliary = -1
 
         # 0 for solver, 1 for helper
         # self.current_agent = 0 
@@ -241,7 +241,7 @@ class GeneratorEnv(ParallelEnv):
         r_external = 0
         r_end = 0
         # print(f'r_internal is: {r_internal}')
-        verbose = False
+        verbose = True
         if verbose:
         # Original trained well rewards
             print(f'r_interal is: {r_internal * self.auxiliary}')

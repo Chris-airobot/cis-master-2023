@@ -1,16 +1,28 @@
-# from gymnasium.wrappers import FlattenObservation
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import numpy as np
-from agents import Agent
-from utils import *
+from src.agents import Agent
+from src.utils import *
 from alternating_env import AlternatingEnv
 from src.solver_only.single_environment import SingleEnvironment
 from argparse import ArgumentParser
-import os
+
 
 os.system('clear')
 # cwd = os.getcwd()
 # print(f"Current working directory: {cwd}")
 first = False
+files = ["src/saved_files/helper.txt", "src/saved_files/solver.txt"]
+
+
+if first:
+    for f in files:
+        file = open(f, "w")
+        #convert variable to string
+        str = repr(-1000)
+        file.write(str)
+        file.close()
 
 
 def training(config):
@@ -19,16 +31,18 @@ def training(config):
         env = SingleEnvironment()
     else:
         env = AlternatingEnv()
-        generator = Agent(env.action_space().n, 
+        env.current_agent = 1
+        helper = Agent(13, 
                    config=config,
                    input_dims=env.observation_space().shape,
                    chkpt_dir='checkpoint/' + config['environment_type'],
-                   name='generator')
+                   name='helper')
     
         if not first:
-            generator.load_models()
+            helper.load_models()
 
-    solver = Agent(env.action_space().n, 
+    env.current_agent = 0
+    solver = Agent(9, 
                                config=config,
                                input_dims=env.observation_space().shape,
                             #    chkpt_dir='checkpoint/' + config['environment_type'],
@@ -39,8 +53,10 @@ def training(config):
  
     figure_file = {
         'solver': 'plots/' + config['environment_type'] +'/solver.png',
-        'generator': 'plots/' + config['environment_type'] + '/generator.png'
+        'helper': 'plots/' + config['environment_type'] + '/helper.png'
     }
+
+
 
     # Read best score from previous training
     f = open('src/saved_files/solver.txt', 'r')
@@ -48,17 +64,17 @@ def training(config):
         contents= f.read()
     solver_best_score = float(contents)
     
-    f = open('src/saved_files/generator.txt', 'r')
+    f = open('src/saved_files/helper.txt', 'r')
     if f.mode=='r':
         contents= f.read()
-    generator_best_score = float(contents)
+    helper_best_score = float(contents)
 
-    score_generator_history = []
+    score_helper_history = []
     score_solver_history = []
 
     memories = {
         'solver': None,
-        'generator': None
+        'helper': None
     }
     n_steps = 0
     learn_iters = 0
@@ -67,7 +83,7 @@ def training(config):
             'score': 0,
             'saved': 0,
         },
-        'generator':{
+        'helper':{
             'score': 0,
             'saved': 0,
         }
@@ -75,14 +91,15 @@ def training(config):
 
 
     for i in range(config['episodes']):
+        auxiliary = -1
         done = False
         truncated = False
         solver_action_done = False
 
         properties['solver']['score'] = 0
-        properties['generator']['score'] = 0
+        properties['helper']['score'] = 0
 
-        # generator first
+        # helper first
         curr_state = env.reset()
         
         while not done and not truncated:
@@ -95,33 +112,33 @@ def training(config):
                 solver_action_done = True
 
             else:
-                action, prob, val = generator.choose_action(curr_state) 
+                action, prob, val = helper.choose_action(curr_state) 
                 next_state, reward, done, truncated, _ = env.step(action)
-                memories['generator'] = [curr_state, action, prob, val, reward, done, truncated]
+                memories['helper'] = [curr_state, action, prob, val, reward, done, truncated]
 
 
 
-            # both solver and generator has executed action once
+            # both solver and helper has executed action once
             if solver_action_done:
                 
                 
 
-                # give external rewards for the generator if the solver terminate the environment
+                # give external rewards for the helper if the solver terminate the environment
                 if memories['solver'][DONE_INDEX]:
-                    memories['generator'][REWARD_INDEX] += -2 * -1
+                    memories['helper'][REWARD_INDEX] += 0
                 else:
-                    memories['generator'][REWARD_INDEX] += memories['solver'][REWARD_INDEX] * 2
+                    memories['helper'][REWARD_INDEX] += memories['solver'][REWARD_INDEX] * 2
 
                 solver.remember(*memories['solver'])
-                generator.remember(*memories['generator'])
+                helper.remember(*memories['helper'])
 
                 properties['solver']['score'] += memories['solver'][REWARD_INDEX]
-                properties['generator']['score'] += memories['generator'][REWARD_INDEX]
+                properties['helper']['score'] += memories['helper'][REWARD_INDEX]
                 n_steps += 1
 
                 if n_steps % config['saving_steps'] == 0 and not memories['solver'][TRUNCATED_INDEX]:
                     solver.learn()
-                    generator.learn()
+                    helper.learn()
                     learn_iters += 1
 
                 solver_action_done = False
@@ -130,10 +147,10 @@ def training(config):
 
             curr_state = next_state
   
-        score_generator_history.append(properties['generator']['score'])
+        score_helper_history.append(properties['helper']['score'])
         score_solver_history.append(properties['solver']['score'])
 
-        avg_generator_score = np.mean(score_generator_history[-100:])
+        avg_helper_score = np.mean(score_helper_history[-100:])
         avg_solver_score = np.mean(score_solver_history[-100:])
 
 
@@ -155,25 +172,25 @@ def training(config):
 
                 solver.save_models()
 
-        if avg_generator_score > generator_best_score:
+        if avg_helper_score > helper_best_score:
             if i > prepare:
-                generator_best_score = avg_generator_score
+                helper_best_score = avg_helper_score
 
                 # Save the best score for next ietration of training 
-                file = open("src/saved_files/generator.txt", "w")
+                file = open("src/saved_files/helper.txt", "w")
                 #convert variable to string
-                str = repr(generator_best_score)
+                str = repr(helper_best_score)
                 file.write(str)
-                properties['generator']['saved'] += 1
-                generator.save_models() 
+                properties['helper']['saved'] += 1
+                helper.save_models() 
 
         
         print(f'====================================== Episode: {i} ======================================')
         print(f'Prisoner_score: {properties["solver"]["score"]}, avg_score: {avg_solver_score}')
         if config['environment_type'] != 'single':
-            print(f'Helper_score: {properties["generator"]["score"]}, avg_score: {avg_generator_score}')
+            print(f'Helper_score: {properties["helper"]["score"]}, avg_score: {avg_helper_score}')
         print(f'time_steps: {n_steps}, learning_steps: {learn_iters}')
-        print(f'solver_model_saving: {properties["solver"]["saved"]}, generator_model_saving: {properties["generator"]["saved"]}')
+        print(f'solver_model_saving: {properties["solver"]["saved"]}, helper_model_saving: {properties["helper"]["saved"]}')
         print(f'========================================================================================\n')
         
 
@@ -181,8 +198,8 @@ def training(config):
         y = [i+1 for i in range(len(score_solver_history))]
         plot_learning_curve(y, score_solver_history,figure_file['solver'], 'solver')
 
-        z = [i+1 for i in range(len(score_generator_history))]
-        plot_learning_curve(z, score_generator_history,figure_file['generator'], 'generator')
+        z = [i+1 for i in range(len(score_helper_history))]
+        plot_learning_curve(z, score_helper_history,figure_file['helper'], 'helper')
 
 
 
@@ -207,10 +224,10 @@ if __name__ == '__main__':
         "batch_size": 5,
         "epochs": 4,
         "alpha": 5e-4, # learning rate
-        "clip_ratio": 0.2,
-        "gamma": 0.95,   # discount factor
+        "clip_ratio": 0.4,
+        "gamma": 0.9,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 750
+        "episodes": 650
     }
 
 

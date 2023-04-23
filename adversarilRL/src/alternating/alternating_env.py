@@ -6,7 +6,7 @@ from gymnasium.spaces import Discrete, MultiDiscrete
 
 from pettingzoo.utils.env import ParallelEnv
 from pettingzoo import ParallelEnv
-from utils import *
+from src.utils import *
 
 
 
@@ -16,9 +16,9 @@ class AlternatingEnv(ParallelEnv):
         # goal coordinates
         self.door_x = None
         self.door_y = None
-        # prisoner coordinates
-        self.prisoner_x = None
-        self.prisoner_y = None
+        # solver coordinates
+        self.solver_x = None
+        self.solver_y = None
         # helper coordinates
         self.helper_x = None
         self.helper_y = None
@@ -34,16 +34,16 @@ class AlternatingEnv(ParallelEnv):
 
         self.auxiliary = -1
 
-        # 0 for prisoner, 1 for helper
+        # 0 for solver, 1 for helper
         self.current_agent = 0 
 
 
         
     def reset(self, seed=None, return_info=False, options=None):
 
-        # prisoner coordinates
-        self.prisoner_x = 0
-        self.prisoner_y = 0
+        # solver coordinates
+        self.solver_x = 0
+        self.solver_y = 0
         # helper coordinates
         self.helper_x = 0
         self.helper_y = 0
@@ -64,8 +64,8 @@ class AlternatingEnv(ParallelEnv):
         self.grid[0][0] = 1
         self.grid[self.door_x][self.door_y] = 1
         
-        # self.grid, self.bridges = map_generation(self.prisoner_x, 
-        #                                          self.prisoner_y, 
+        # self.grid, self.bridges = map_generation(self.solver_x, 
+        #                                          self.solver_y, 
         #                                          self.door_x, 
         #                                          self.door_y)
 
@@ -82,8 +82,8 @@ class AlternatingEnv(ParallelEnv):
         self.path = np.zeros(8, dtype=int)
         self.checkPath()
 
-        observations = [self.prisoner_x + 7 * self.prisoner_y,
-                        self.door_x + 7 * self.prisoner_y,
+        observations = [self.solver_x + 7 * self.solver_y,
+                        self.door_x + 7 * self.solver_y,
                         self.helper_x + 7 * self.helper_y,
                         self.path[0],self.path[1],  
                         self.path[2],self.path[3],  
@@ -101,14 +101,14 @@ class AlternatingEnv(ParallelEnv):
         infos = {}
 
         
-        self.helper_x = self.prisoner_x
-        self.helper_y = self.prisoner_y
+        # self.helper_x = self.solver_x
+        # self.helper_y = self.solver_y
 
 
         r_timeout = -self.timestep * 0.05
 
         # Manhattan Distance before the solver moves, potential function 
-        potential_1 = 1 - (abs(self.prisoner_x - self.door_x) + abs(self.prisoner_y - self.door_y)) / 12 
+        potential_1 = 1 - (abs(self.solver_x - self.door_x) + abs(self.solver_y - self.door_y)) / 12 
 
 
         generated = 0
@@ -219,7 +219,7 @@ class AlternatingEnv(ParallelEnv):
             # potential for helper
             potential_3 = 1 - (abs(self.helper_x - self.door_x) + abs(self.helper_y - self.door_y)) / 12 
 
-            # f = open('src/saved_files/prisoner_status.txt', 'r')
+            # f = open('src/saved_files/solver_status.txt', 'r')
             # if f.mode=='r':
             #     contents= f.read()
             # r_closer = float(contents)
@@ -230,10 +230,10 @@ class AlternatingEnv(ParallelEnv):
 
             # Generator's normal reward's part 2, generator created blocks
             # r_internal = 0.2 * generated  
-            r_internal = 0.2 if generated else 0 
-            r_penalty = -1 if r_internal == 0 else 0 
-
-            r_to_goal = (self.discount_factor * potential_3 - potential_1) * 2
+            r_internal = generated
+            r_penalty = -2 if r_internal == 0 else 0 
+            
+            r_to_goal = (self.discount_factor * potential_3 - potential_1) * 4
             
             # print(f'r_internal is: {r_internal}')
 
@@ -250,55 +250,55 @@ class AlternatingEnv(ParallelEnv):
         # 1 block move: 0 up, 1 down, 2 left, 3 right
         # 2 block move: 4 up, 5 down, 6 left, 7 right
         elif self.current_agent == 0:
-            if action == 0 and self.prisoner_x > 0:
-                self.prisoner_x -= 1
-                infos['prisoner'] = 'and it works!'
+            if action == 0 and self.solver_x > 0:
+                self.solver_x -= 1
+                infos['solver'] = 'and it works!'
                 # print("Solver moves up")
-            elif action == 1 and self.prisoner_x < 6:
-                self.prisoner_x += 1
-                infos['prisoner'] = 'and it works!'
+            elif action == 1 and self.solver_x < 6:
+                self.solver_x += 1
+                infos['solver'] = 'and it works!'
                 # print("Solver moves down")
-            elif action == 2 and self.prisoner_y > 0:
-                self.prisoner_y -= 1
-                infos['prisoner'] = 'and it works!'
+            elif action == 2 and self.solver_y > 0:
+                self.solver_y -= 1
+                infos['solver'] = 'and it works!'
                 # print("Solver moves left")
-            elif action == 3 and self.prisoner_y < 6:
-                self.prisoner_y += 1
-                infos['prisoner'] = 'and it works!'
+            elif action == 3 and self.solver_y < 6:
+                self.solver_y += 1
+                infos['solver'] = 'and it works!'
                 # print("Solver moves right")
             
             # 2 block move: 4 up, 5 down, 6 left, 7 right
-            elif action == 4 and self.prisoner_x > 1:
-                self.prisoner_x -= 2
-                infos['prisoner'] = 'and it works!'
+            elif action == 4 and self.solver_x > 1:
+                self.solver_x -= 2
+                infos['solver'] = 'and it works!'
                 # print("Solver moves up")
-            elif action == 5 and self.prisoner_x < 5:
-                self.prisoner_x += 2
-                infos['prisoner'] = 'and it works!'
+            elif action == 5 and self.solver_x < 5:
+                self.solver_x += 2
+                infos['solver'] = 'and it works!'
                 # print("Solver moves down")
-            elif action == 6 and self.prisoner_y > 1:
-                self.prisoner_y -= 2
-                infos['prisoner'] = 'and it works!'
+            elif action == 6 and self.solver_y > 1:
+                self.solver_y -= 2
+                infos['solver'] = 'and it works!'
                 # print("Solver moves left")
-            elif action == 7 and self.prisoner_y < 5:
-                self.prisoner_y += 2
-                infos['prisoner'] = 'and it works!'
+            elif action == 7 and self.solver_y < 5:
+                self.solver_y += 2
+                infos['solver'] = 'and it works!'
             elif action == 8:
-                infos['prisoner'] = 'and it works!'
+                infos['solver'] = 'and it works!'
                 pass
             else:
-                infos['prisoner'] = 'but it does not work!'
+                infos['solver'] = 'but it does not work!'
 
 
             # Manhattan Distance after the solver moves, potential function after the movement
-            potential_2 = 1 - (abs(self.prisoner_x - self.door_x) + abs(self.prisoner_y - self.door_y)) / 12 
+            potential_2 = 1 - (abs(self.solver_x - self.door_x) + abs(self.solver_y - self.door_y)) / 12 
 
 
             # Solver's normal reward
-            r_closer = (self.discount_factor * potential_2 - potential_1) * 2  
+            r_closer = (self.discount_factor * potential_2 - potential_1) * 4  
 
             # Save the best score for next ietration of training 
-            # file = open("src/saved_files/prisoner_status.txt", "w")
+            # file = open("src/saved_files/solver_status.txt", "w")
             # #convert variable to string
             # str = repr(r_closer)
             # file.write(str)
@@ -311,16 +311,16 @@ class AlternatingEnv(ParallelEnv):
         self.timestep += 1
 
         # Solver touches the trap
-        if [self.prisoner_x, self.prisoner_y] not in self.bridges:
+        if [self.solver_x, self.solver_y] not in self.bridges:
             r_fail = -2
             reward += r_fail if self.current_agent == 0 else r_fail * self.auxiliary
             termination = True
-            infos['prisoner'] += ' But it fails.'
+            infos['solver'] += ' But it fails.'
         # Solver reach the goal
-        elif self.prisoner_x == self.door_x and self.prisoner_y == self.door_y:
+        elif self.solver_x == self.door_x and self.solver_y == self.door_y:
             r_complete = 2
             reward += r_complete if self.current_agent == 0 else 0 
-            infos['prisoner'] = "Completed"
+            infos['solver'] = "Completed"
             print("Reaches the Goal!")
             termination = True
 
@@ -333,8 +333,8 @@ class AlternatingEnv(ParallelEnv):
         
 
         # Get observations
-        observation = [self.prisoner_x + 7 * self.prisoner_y,
-                       self.door_x + 7 * self.prisoner_y,
+        observation = [self.solver_x + 7 * self.solver_y,
+                       self.door_x + 7 * self.solver_y,
                        self.helper_x + 7 * self.helper_y,
                        self.path[0],self.path[1],  
                        self.path[2],self.path[3],  
@@ -348,21 +348,21 @@ class AlternatingEnv(ParallelEnv):
 
     def checkPath(self):
         # up one
-        self.path[0] = 1 if self.prisoner_x > 0 and [self.prisoner_x-1, self.prisoner_y] in self.bridges else 0
+        self.path[0] = 1 if self.solver_x > 0 and [self.solver_x-1, self.solver_y] in self.bridges else 0
         # up two
-        self.path[1] = 1 if self.prisoner_x > 1 and [self.prisoner_x-2, self.prisoner_y] in self.bridges else 0
+        self.path[1] = 1 if self.solver_x > 1 and [self.solver_x-2, self.solver_y] in self.bridges else 0
         # down one
-        self.path[2] = 1 if self.prisoner_x < 6 and [self.prisoner_x+1, self.prisoner_y] in self.bridges else 0
+        self.path[2] = 1 if self.solver_x < 6 and [self.solver_x+1, self.solver_y] in self.bridges else 0
         # down two
-        self.path[3] = 1 if self.prisoner_x < 5 and [self.prisoner_x+2, self.prisoner_y] in self.bridges else 0
+        self.path[3] = 1 if self.solver_x < 5 and [self.solver_x+2, self.solver_y] in self.bridges else 0
         # left one
-        self.path[4] = 1 if self.prisoner_y > 0 and [self.prisoner_x, self.prisoner_y-1] in self.bridges else 0
+        self.path[4] = 1 if self.solver_y > 0 and [self.solver_x, self.solver_y-1] in self.bridges else 0
         # left two
-        self.path[5] = 1 if self.prisoner_y > 1 and [self.prisoner_x, self.prisoner_y-2] in self.bridges else 0
+        self.path[5] = 1 if self.solver_y > 1 and [self.solver_x, self.solver_y-2] in self.bridges else 0
         # right one
-        self.path[6] = 1 if self.prisoner_y < 6 and [self.prisoner_x, self.prisoner_y+1] in self.bridges else 0
+        self.path[6] = 1 if self.solver_y < 6 and [self.solver_x, self.solver_y+1] in self.bridges else 0
         # right two
-        self.path[7] = 1 if self.prisoner_y < 5 and [self.prisoner_x, self.prisoner_y+2] in self.bridges else 0
+        self.path[7] = 1 if self.solver_y < 5 and [self.solver_x, self.solver_y+2] in self.bridges else 0
 
 
 
@@ -371,8 +371,8 @@ class AlternatingEnv(ParallelEnv):
 
         for coord in self.bridges:
             self.display[coord[0]][coord[1]] = '1'        
-        self.display[self.prisoner_x][self.prisoner_y] = 'P'
-        self.display[self.door_x][self.door_y] = 'D'
+        self.display[self.solver_x][self.solver_y] = 'S'
+        self.display[self.door_x][self.door_y] = 'G'
 
         for x in range(len(self.display)):
             for y in range(len(self.display[x])):

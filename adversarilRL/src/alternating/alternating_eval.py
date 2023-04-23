@@ -1,10 +1,12 @@
-from utils import *
-import numpy as np
-from agents import Agent
-from alternating_env import AlternatingEnv
-from argparse import ArgumentParser
 import os
-import shutil
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+import numpy as np
+from src.agents import Agent
+from src.utils import *
+from alternating_env import AlternatingEnv
+from src.solver_only.single_environment import SingleEnvironment
+from argparse import ArgumentParser
 
 
 os.system('clear')
@@ -34,50 +36,50 @@ if __name__ == '__main__':
     }
     
     # Initial settings
-    figure_file = {'generator': 'plots/' + config['environment_type'] +'/generator.png',}
     chkpt_dir = 'checkpoint/' + config['environment_type']
-    name1 = 'generator'
+    name1 = 'helper'
     name2 = 'solver'
     model_files = [chkpt_dir+'/critic_'+name1, chkpt_dir+'/actor_'+name1, 
                    chkpt_dir+'/critic_'+name2, chkpt_dir+'/actor_'+name2]
     # Creating environment 
     env = AlternatingEnv()
-    solver = Agent(env.action_space().n,
+    env.current_agent = 1
+    helper = Agent(13,
                      config=config,
                      input_dims=env.observation_space().shape,
                      chkpt_dir='checkpoint/' + config['environment_type'],
-                     name='solver')
+                     name='helper')
 
-    solver.load_models()
-    
-    generator = Agent(env.action_space().n, 
+    helper.load_models()
+    env.current_agent = 0
+    solver = Agent(9, 
                    config=config,
                    input_dims=env.observation_space().shape,
                    chkpt_dir='checkpoint/' + config['environment_type'],
-                   name='generator')
+                   name='solver')
 
-    generator.load_models()
+    solver.load_models()
 
     
-    agents = {'solver': solver, 'generator': generator}
+    agents = {'helper': helper, 'solver': solver}
 
     verbose = True
     interactive = False
     # score_history = []
-    score_generator_history = []
     score_solver_history = []
+    score_helper_history = []
     completed = 0
     avg_score = 0
     n_steps = 0
 
     properties = {
-        'solver': {
+        'helper': {
             'learn_iters': 0,
             'n_steps': 0,
             'score': 0,
             'saved': 0
         },
-        'generator':{
+        'solver':{
             'learn_iters': 0,
             'n_steps': 0,
             'score': 0,
@@ -90,10 +92,10 @@ if __name__ == '__main__':
         done = False
         truncated = False
 
+        properties['helper']['score'] = 0
         properties['solver']['score'] = 0
-        properties['generator']['score'] = 0
 
-        # generator first
+        # helper first
         curr_state = env.reset()
         
         while not done and not truncated:
@@ -102,7 +104,7 @@ if __name__ == '__main__':
             if env.current_agent == 0:
                 action, prob, val = solver.choose_action(curr_state) 
                 if interactive:
-                    print("What is the action of the Prisoner?")
+                    print("What is the action of the Solver?")
                     print("0: up 1, 1: down 1, 2: left 1, 3: right 1")
                     print("4: up 2, 5: down 2, 6: left 2, 7: right 2")
                     action = int(input())
@@ -113,12 +115,12 @@ if __name__ == '__main__':
 
                 if verbose:
                     print(f'{solver_action_map[action]}, {info["solver"]}')
-                    print(f'Prisoner Reward value after taking the action: {reward}')
+                    print(f'Solver Reward value after taking the action: {reward}')
                     # print("After actions:")
                     env.render()
 
             else:
-                action, prob, val = generator.choose_action(curr_state) 
+                action, prob, val = helper.choose_action(curr_state) 
                 if interactive:
                     print("What is the action of the Helper?")
                     print("0: up 2, 1: down 2, 2: left 2, 3: right 2")
@@ -126,11 +128,11 @@ if __name__ == '__main__':
                     action = int(input())
 
                 next_state, reward, done, truncated, info = env.step(action)
-                properties['generator']['score'] += reward
-                properties['generator']['n_steps'] += 1
+                properties['helper']['score'] += reward
+                properties['helper']['n_steps'] += 1
 
                 if verbose:
-                    print(f'{generator_action_map[action]}, {info["generator"]}')
+                    print(f'{helper_action_map[action]}, {info["helper"]}')
                     print(f'Helper Reward value after taking the action: {reward}')
                     # print("After actions:")
                     env.render()
@@ -138,14 +140,15 @@ if __name__ == '__main__':
 
             curr_state = next_state
   
-        score_generator_history.append(properties['generator']['score'])
-        # score_solver_history.append(properties['solver']['score'])
+        score_solver_history.append(properties['solver']['score'])
+        score_helper_history.append(properties['helper']['score'])
 
-        avg_generator_score = np.mean(score_generator_history[-100:])
-        # avg_solver_score = np.mean(score_solver_history[-100:])
+        avg_solver_score = np.mean(score_solver_history[-100:])
+        avg_helper_score = np.mean(score_helper_history[-100:])
 
 
-        print(f'episode: {i}, score: {avg_generator_score} avg_generator_score: {avg_generator_score}, time_steps: {n_steps}, completed_times: {completed}')
+        print(f'episode: {i}, time_steps: {n_steps}, completed_times: {completed}')
+        print(f'avg_solver_score: {avg_solver_score} avg_helper_score: {avg_helper_score}')
 
 
 

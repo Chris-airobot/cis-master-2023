@@ -7,7 +7,7 @@ from gymnasium.spaces import Discrete, MultiDiscrete
 
 from pettingzoo.utils.env import ParallelEnv
 from pettingzoo import ParallelEnv
-from utils import *
+from src.utils import *
 
 
 class SingleEnvironment(ParallelEnv):
