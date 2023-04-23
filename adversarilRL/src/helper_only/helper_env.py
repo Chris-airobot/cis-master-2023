@@ -1,7 +1,7 @@
 
 import functools
 import random
-from copy import copy
+import copy
 import numpy as np
 from gymnasium.spaces import Discrete, MultiDiscrete
 from pettingzoo.utils.env import ParallelEnv
@@ -32,7 +32,7 @@ class GeneratorEnv(ParallelEnv):
         self.discount_factor = 0.99
 
 
-        self.auxiliary = -1
+        self.auxiliary = 1
 
         # 0 for solver, 1 for helper
         # self.current_agent = 0 
@@ -49,8 +49,11 @@ class GeneratorEnv(ParallelEnv):
         # self.generated_block_x = 0
         # self.generated_block_y = 0
         # goal coordinates
-        self.door_x = random.randint(2, 5) 
-        self.door_y = random.randint(2, 5)
+        self.door_x = random.randint(1, 6) 
+        self.door_y = random.randint(1, 6)
+        # self.door_x = 2
+        # self.door_y = 5
+
 
         
         self.grid = np.zeros((7, 7), dtype=object)
@@ -93,7 +96,6 @@ class GeneratorEnv(ParallelEnv):
 
     def step(self, action):
         # Initialize all variables for return
-        hello = True
         termination = False
         truncation = False
         reward = 0
@@ -104,7 +106,7 @@ class GeneratorEnv(ParallelEnv):
         # self.helper_y = self.solver_y
 
 
-        r_timeout = -self.timestep * 0.05
+        
 
         # # Manhattan Distance before the solver moves, potential function 
         potential_1 = 1 - (abs(self.helper_x - self.door_x) + abs(self.helper_y - self.door_y)) / 12 
@@ -229,20 +231,24 @@ class GeneratorEnv(ParallelEnv):
 
         # Generator's normal reward's part 2, helper created blocks
         # r_internal = 0.2 * generated  
-        r_internal = 0.2*generated
+        r_internal = generated
         r_penalty = -1 if r_internal == 0 else 0 
 
-        r_to_goal = (self.discount_factor * potential_3 - potential_1) * 2
-        r_external = random.choice([0.1, 0.1, 0.1, -0.1, -0.1])
-        r_end = random.choice([2, 2, 2, 2, -2])
-
+        r_to_goal = (self.discount_factor * potential_3 - potential_1) * 4
+        r_time = self.timestep * 0.2 * self.auxiliary
+        # r_external = random.choice([0.1, 0.1, 0.1, -0.1, -0.1])
+        # r_end = random.choice([2, 2, 2, 2, -2])
+        r_external = 0
+        r_end = 0
         # print(f'r_internal is: {r_internal}')
-
+        verbose = False
+        if verbose:
         # Original trained well rewards
-        # print(f'r_interal is: {r_internal * self.auxiliary}')
-        # # print(f'r_inc is: {r_inc}')
-        # print(f'r_to_goal is: {r_to_goal}')
-        # print(f'r_timeout is: {r_timeout}')
+            print(f'r_interal is: {r_internal * self.auxiliary}')
+            # print(f'r_inc is: {r_inc}')
+            print(f'r_to_goal is: {r_to_goal}')
+            print(f'r_penalty is: {r_penalty}')
+            print(f'r_time is: {r_time}')
 
         reward = r_internal * self.auxiliary  + r_penalty + r_to_goal + r_external 
         # print(f'final reward is: {reward}')
@@ -265,7 +271,7 @@ class GeneratorEnv(ParallelEnv):
 
         # Check truncation conditions (overwrites termination conditions)
         if self.timestep > 20:
-            reward += r_timeout 
+            reward += r_time
             print("Time out")
             truncation = True
 
@@ -306,12 +312,16 @@ class GeneratorEnv(ParallelEnv):
 
 
     def checkGoal(self):
-        if abs(self.helper_x - self.door_x) < 3 and self.helper_y == self.door_y:
-            return True
-        elif abs(self.helper_y - self.door_y) < 3 and self.helper_x == self.door_x:
-            return True
-        else:
-            return False
+        bridges = copy.deepcopy(self.bridges)
+        bridges.remove([self.door_x, self.door_y])
+        for coord in bridges:
+            if abs(coord[0] - self.door_x) < 3 and coord[1] == self.door_y:
+                return True
+            elif abs(coord[1] - self.door_y) < 3 and coord[0] == self.door_x:
+                return True
+
+    
+        return False
 
 
 

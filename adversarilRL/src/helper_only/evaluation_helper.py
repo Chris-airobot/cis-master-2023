@@ -14,6 +14,11 @@ import shutil
 os.system('clear')
             
 if __name__ == '__main__':
+    verbose = True
+    interactive = False
+    saving = False
+
+    episodes = 300 if saving else 1
     parser = ArgumentParser()
     parser.add_argument(
         "-e",
@@ -34,7 +39,7 @@ if __name__ == '__main__':
         "clip_ratio": 0.2,
         "gamma": 0.99,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 1
+        "episodes": episodes
     }
     
     # Initial settings
@@ -56,7 +61,7 @@ if __name__ == '__main__':
     
 
 
-    verbose = True
+
 
     score_history = []
     score_helper_history = []
@@ -76,10 +81,16 @@ if __name__ == '__main__':
             probs = {}
             vals = {}
             action, prob, val = helper.choose_action(curr_state)  
+            if interactive:
+                print("What is the action of the Helper?")
+                print("0: up 2, 1: down 2, 2: left 2, 3: right 2")
+                print("4: jump up 1, 5: jump down 1, 6: jump left 1, 7: jump right 1")
+                print("8: up 1, 9: down 1, 10: left 1, 11: right 1")
+                action = int(input())
             
             next_state, reward, done, truncated, info = env.step(action)
             if verbose:
-                print(f'Prisoner action: {helper_action_map[action] }')
+                print(f'Helper action: {helper_action_map[action] }')
                 print(f'Reward value after taking the action: {reward}')
                 print("After moving:")
                 env.render()
@@ -101,12 +112,12 @@ if __name__ == '__main__':
         print(f'episode: {i}, current_score: {properties["score"]} helper_score: {avg_helper_score}, time_steps: {n_steps}, completed: {properties["completed"]}')
 
 
-
-    # for file in model_files:
-    #     prefix = './checkpoint_history'
-    #     x = int(completed /config["episodes"]*100)
-    #     target = prefix+file[10:]+f'_{x}'
-    #     shutil.copyfile(file, target)
+    if saving:
+        for file in model_files:
+            prefix = './checkpoint_history'
+            x = int(properties['completed'] /config["episodes"]*100)
+            target = prefix+file[10:]+f'_{x}'
+            shutil.copyfile(file, target)
 
     # 85 is the trained agent after using the new heuristic, loaded map with np.choice goal
     # 30 is the model trained before using the heuristic, loaded map with np.choice goal

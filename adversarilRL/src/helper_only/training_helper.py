@@ -11,7 +11,7 @@ from argparse import ArgumentParser
 os.system('clear')
 # cwd = os.getcwd()
 # print(f"Current working directory: {cwd}")
-first = False
+first = True
 
 if first:
     file = open("src/saved_files/helper.txt", "w")
@@ -143,7 +143,7 @@ if __name__ == '__main__':
         "epochs": 4,
         "alpha": 5e-4, # learning rate
         "clip_ratio": 0.2,
-        "gamma": 0.95,   # discount factor
+        "gamma": 0.9,   # discount factor
         "td_lambda": 0.95,
         "episodes": 750
     }
