@@ -221,13 +221,13 @@ if __name__ == '__main__':
     config ={
         "environment_type" : args.environment_type,
         "saving_steps" : 20,
-        "batch_size": 5,
-        "epochs": 4,
-        "alpha": 5e-4, # learning rate
+        "batch_size": 2,
+        "epochs": 8,
+        "alpha": 5e-5, # learning rate
         "clip_ratio": 0.4,
-        "gamma": 0.9,   # discount factor
-        "td_lambda": 0.95,
-        "episodes": 650
+        "gamma": 0.85,   # discount factor
+        "td_lambda": 0.99,
+        "episodes": 700
     }
 
 

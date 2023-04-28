@@ -241,7 +241,7 @@ class GeneratorEnv(ParallelEnv):
         r_external = 0
         r_end = 0
         # print(f'r_internal is: {r_internal}')
-        verbose = True
+        verbose = False
         if verbose:
         # Original trained well rewards
             print(f'r_interal is: {r_internal * self.auxiliary}')

@@ -318,7 +318,7 @@ class AlternatingEnv(ParallelEnv):
             infos['solver'] += ' But it fails.'
         # Solver reach the goal
         elif self.solver_x == self.door_x and self.solver_y == self.door_y:
-            r_complete = 2
+            r_complete = 4
             reward += r_complete if self.current_agent == 0 else 0 
             infos['solver'] = "Completed"
             print("Reaches the Goal!")

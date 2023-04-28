@@ -98,3 +98,18 @@ They used two types of feedback:
 - Setting seems right now: 
     - The sepearted helper generate *hard* maps when the auxiliary input is -1.
     - Next is trying the *simple* map, and in the end, combine everything together
+
+
+# Week 8:
+- Finalize the whole system environment
+- Do the dynamic auxiliary input thing
+- Consider about the experimental section
+    - Experiments
+        -  Random Map + Solver 
+        -  Helper generates whole map + Solver
+        -  Helper + Solver alternating Markov without human dynamic auxiliary input
+        - Helper + Solver alternating Markov with human-intervention
+    - Matrices
+        - Convergence (training time, success rate)
+        - Performance
+        - $\frac{\text{\# of blocks in optimal path}}{\text{\# of blocks in the whole map}}$

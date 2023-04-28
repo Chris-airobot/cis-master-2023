@@ -24,9 +24,9 @@ if __name__ == '__main__':
         "-e",
         "--environment_type",
         dest="environment_type",
-        default="adversarial",
+        default="helper_only",
         metavar='',
-        help="options: adversarial, single, collaborative, adversarial_interaction",
+        help="options: adversarial, single, collaborative, adversarial_interaction, helper_only",
     )
     args = parser.parse_args()
 
