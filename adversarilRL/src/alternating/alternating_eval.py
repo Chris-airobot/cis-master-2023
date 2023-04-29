@@ -7,19 +7,25 @@ from src.utils import *
 from alternating_env import AlternatingEnv
 from src.solver_only.single_environment import SingleEnvironment
 from argparse import ArgumentParser
-
+import shutil
 
 os.system('clear')
             
 if __name__ == '__main__':
+    verbose = False
+    interactive = False
+    saving = True
+    test = True
+    episodes = 300 if test else 1
+
     parser = ArgumentParser()
     parser.add_argument(
         "-e",
         "--environment_type",
         dest="environment_type",
-        default="adversarial",
+        default="alternating",
         metavar='',
-        help="options: adversarial, single, collaborative, adversarial_interaction",
+        help="options: adversarial, single, collaborative, adversarial_interaction, alternating",
     )
     args = parser.parse_args()
 
@@ -32,7 +38,7 @@ if __name__ == '__main__':
         "clip_ratio": 0.2,
         "gamma": 0.99,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 1
+        "episodes": episodes
     }
     
     # Initial settings
@@ -63,14 +69,14 @@ if __name__ == '__main__':
     
     agents = {'helper': helper, 'solver': solver}
 
-    verbose = True
-    interactive = False
+
     # score_history = []
     score_solver_history = []
     score_helper_history = []
     completed = 0
     avg_score = 0
     n_steps = 0
+  
 
     properties = {
         'helper': {
@@ -113,6 +119,11 @@ if __name__ == '__main__':
                 properties['solver']['score'] += reward
                 properties['solver']['n_steps'] += 1
 
+                if truncated:
+                    print(f"solver reward: {reward}")
+                if "Completed" in info['solver']:
+                    completed += 1
+
                 if verbose:
                     print(f'{solver_action_map[action]}, {info["solver"]}')
                     print(f'Solver Reward value after taking the action: {reward}')
@@ -136,6 +147,9 @@ if __name__ == '__main__':
                     print(f'Helper Reward value after taking the action: {reward}')
                     # print("After actions:")
                     env.render()
+                
+                if truncated:
+                    print(f"helper reward: {reward}")
 
 
             curr_state = next_state
@@ -151,12 +165,12 @@ if __name__ == '__main__':
         print(f'avg_solver_score: {avg_solver_score} avg_helper_score: {avg_helper_score}')
 
 
-
-    # for file in model_files:
-    #     prefix = './checkpoint_history'
-    #     x = int(completed /config["episodes"]*100)
-    #     target = prefix+file[10:]+f'_{x}'
-    #     shutil.copyfile(file, target)
+    if saving:
+        for file in model_files:
+            prefix = './checkpoint_history'
+            x = int(completed /config["episodes"]*100)
+            target = prefix+file[10:]+f'_{x}'
+            shutil.copyfile(file, target)
 
     # 45 is the trained model with a potential good success rate but no time outs 
     # 97 is the model that trained good in the end, but has some time outss

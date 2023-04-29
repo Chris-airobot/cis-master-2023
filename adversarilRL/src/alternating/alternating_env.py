@@ -52,6 +52,7 @@ class AlternatingEnv(ParallelEnv):
         self.generated_block_y = 0
         # goal coordinates
         self.door_x = random.randint(2, 5) 
+        # self.door_x = random.choice([2,4,6])
         self.door_y = random.randint(2, 5)
 
         
@@ -291,11 +292,11 @@ class AlternatingEnv(ParallelEnv):
 
 
             # Manhattan Distance after the solver moves, potential function after the movement
-            potential_2 = 1 - (abs(self.solver_x - self.door_x) + abs(self.solver_y - self.door_y)) / 12 
+            potential_2 = 1 - (abs(self.solver_x - self.door_x) + abs(self.solver_y - self.door_y)) / 12
 
 
             # Solver's normal reward
-            r_closer = (self.discount_factor * potential_2 - potential_1) * 4  
+            r_closer = (self.discount_factor * potential_2  - potential_1) * 6  
 
             # Save the best score for next ietration of training 
             # file = open("src/saved_files/solver_status.txt", "w")
@@ -325,8 +326,9 @@ class AlternatingEnv(ParallelEnv):
             termination = True
 
         # Check truncation conditions (overwrites termination conditions)
-        if self.timestep > 20:
-            reward += r_timeout 
+        if self.timestep > 21:
+            # print(f'Current agent: {self.current_agent}')
+            reward += r_timeout * 4
             print("Time out")
             truncation = True
 

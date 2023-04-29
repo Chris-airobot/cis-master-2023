@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import numpy as np
 from src.agents import Agent
@@ -43,13 +44,14 @@ def training(config):
 
     env.current_agent = 0
     solver = Agent(9, 
-                               config=config,
-                               input_dims=env.observation_space().shape,
-                            #    chkpt_dir='checkpoint/' + config['environment_type'],
-                               chkpt_dir='checkpoint/' + config['environment_type'],
-                               name='solver')
+                    config=config,
+                    input_dims=env.observation_space().shape,
+                #    chkpt_dir='checkpoint/' + config['environment_type'],
+                    chkpt_dir='checkpoint/' + config['environment_type'],
+                    name='solver')
     if not first:
         solver.load_models()
+
  
     figure_file = {
         'solver': 'plots/' + config['environment_type'] +'/solver.png',
@@ -78,6 +80,7 @@ def training(config):
     }
     n_steps = 0
     learn_iters = 0
+    completed = 0
     properties = {
         'solver': {
             'score': 0,
@@ -107,9 +110,12 @@ def training(config):
 
             if env.current_agent == 0:
                 action, prob, val = solver.choose_action(curr_state) 
-                next_state, reward, done, truncated, _ = env.step(action)
+                next_state, reward, done, truncated, info = env.step(action)
                 memories['solver'] = [curr_state, action, prob, val, reward, done, truncated]
                 solver_action_done = True
+
+                if "Completed" in info['solver']:
+                    completed += 1
 
             else:
                 action, prob, val = helper.choose_action(curr_state) 
@@ -125,7 +131,7 @@ def training(config):
 
                 # give external rewards for the helper if the solver terminate the environment
                 if memories['solver'][DONE_INDEX]:
-                    memories['helper'][REWARD_INDEX] += 0
+                    memories['helper'][REWARD_INDEX] += -2 * auxiliary
                 else:
                     memories['helper'][REWARD_INDEX] += memories['solver'][REWARD_INDEX] * 2
 
@@ -184,22 +190,22 @@ def training(config):
                 properties['helper']['saved'] += 1
                 helper.save_models() 
 
-        
+
         print(f'====================================== Episode: {i} ======================================')
         print(f'Prisoner_score: {properties["solver"]["score"]}, avg_score: {avg_solver_score}')
         if config['environment_type'] != 'single':
             print(f'Helper_score: {properties["helper"]["score"]}, avg_score: {avg_helper_score}')
-        print(f'time_steps: {n_steps}, learning_steps: {learn_iters}')
+        print(f'time_steps: {n_steps}, learning_steps: {learn_iters}, completed_times: {completed}')
         print(f'solver_model_saving: {properties["solver"]["saved"]}, helper_model_saving: {properties["helper"]["saved"]}')
         print(f'========================================================================================\n')
         
 
-        # Plots
-        y = [i+1 for i in range(len(score_solver_history))]
-        plot_learning_curve(y, score_solver_history,figure_file['solver'], 'solver')
+        # # Plots
+        # y = [i+1 for i in range(len(score_solver_history))]
+        # plot_learning_curve(y, score_solver_history,figure_file['solver'], 'solver')
 
-        z = [i+1 for i in range(len(score_helper_history))]
-        plot_learning_curve(z, score_helper_history,figure_file['helper'], 'helper')
+        # z = [i+1 for i in range(len(score_helper_history))]
+        # plot_learning_curve(z, score_helper_history,figure_file['helper'], 'helper')
 
 
 
@@ -211,9 +217,9 @@ if __name__ == '__main__':
         "-e",
         "--environment_type",
         dest="environment_type",
-        default="adversarial",
+        default="alternating",
         metavar='',
-        help="options: adversarial, single, collaborative, adversarial_interaction",
+        help="options: adversarial, single, collaborative, adversarial_interaction, alternating",
     )
     args = parser.parse_args()
 
@@ -222,16 +228,18 @@ if __name__ == '__main__':
         "environment_type" : args.environment_type,
         "saving_steps" : 20,
         "batch_size": 2,
-        "epochs": 8,
-        "alpha": 5e-5, # learning rate
-        "clip_ratio": 0.4,
-        "gamma": 0.85,   # discount factor
-        "td_lambda": 0.99,
-        "episodes": 700
+        "epochs": 12,
+        "alpha": 1.2e-5, # learning rate
+        "clip_ratio": 0.15,
+        "gamma": 0.99,   # discount factor
+        "td_lambda": 0.95,
+        "episodes": 10000
     }
 
-
+    start = time.time()
     training(config)
+    end = time.time()
+    print(f"Total time taken: {end-start}")
     # import pettingzoo 
     # import pettingzoo.utils as pz_utils
     # from stable_baselines3 import PPO
