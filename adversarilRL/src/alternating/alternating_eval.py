@@ -12,10 +12,10 @@ import shutil
 os.system('clear')
             
 if __name__ == '__main__':
-    verbose = False
+    verbose = True
     interactive = False
-    saving = True
-    test = True
+    saving = False
+    test = False
     episodes = 300 if test else 1
 
     parser = ArgumentParser()
@@ -69,7 +69,10 @@ if __name__ == '__main__':
     
     agents = {'helper': helper, 'solver': solver}
 
-
+    memories = {
+        'solver': None,
+        'helper': None
+    }
     # score_history = []
     score_solver_history = []
     score_helper_history = []
@@ -97,6 +100,7 @@ if __name__ == '__main__':
     for i in range(config['episodes']):
         done = False
         truncated = False
+        solver_action_done = False
 
         properties['helper']['score'] = 0
         properties['solver']['score'] = 0
@@ -115,7 +119,11 @@ if __name__ == '__main__':
                     print("4: up 2, 5: down 2, 6: left 2, 7: right 2")
                     action = int(input())
 
-                next_state, reward, done, truncated, info = env.step(action)
+                next_state, reward, done, truncated, info, auxiliary = env.step(action)
+                memories['solver'] = [curr_state, action, prob, val, reward, done, truncated]
+                solver_action_done = True
+
+
                 properties['solver']['score'] += reward
                 properties['solver']['n_steps'] += 1
 
@@ -137,8 +145,10 @@ if __name__ == '__main__':
                     print("0: up 2, 1: down 2, 2: left 2, 3: right 2")
                     print("4: up 1, 5: down 1, 6: left 1, 7: right 1")
                     action = int(input())
+                next_state, reward, done, truncated, info, auxiliary = env.step(action)
+                memories['helper'] = [curr_state, action, prob, val, reward, done, truncated]
 
-                next_state, reward, done, truncated, info = env.step(action)
+
                 properties['helper']['score'] += reward
                 properties['helper']['n_steps'] += 1
 
@@ -151,6 +161,15 @@ if __name__ == '__main__':
                 if truncated:
                     print(f"helper reward: {reward}")
 
+            if solver_action_done:
+                
+            
+                # give external rewards for the helper if the solver terminate the environment
+                if memories['solver'][DONE_INDEX]:
+                    memories['helper'][REWARD_INDEX] += -2 * auxiliary
+                else:
+                    print(f"Helper external reward: {memories['solver'][REWARD_INDEX]}")
+                    memories['helper'][REWARD_INDEX] += memories['solver'][REWARD_INDEX] * 2
 
             curr_state = next_state
   
@@ -172,5 +191,9 @@ if __name__ == '__main__':
             target = prefix+file[10:]+f'_{x}'
             shutil.copyfile(file, target)
 
-    # 45 is the trained model with a potential good success rate but no time outs 
-    # 97 is the model that trained good in the end, but has some time outss
+
+# 30 is the model trained in the "-1" auxiliary input only
+# 43 is the model continued trained in 1 from "30"  
+
+# solver score: 2.4335000000000004
+# helper score: 4.2867

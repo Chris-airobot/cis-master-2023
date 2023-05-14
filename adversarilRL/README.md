@@ -113,3 +113,21 @@ They used two types of feedback:
         - Convergence (training time, success rate)
         - Performance
         - $\frac{\text{\# of blocks in optimal path}}{\text{\# of blocks in the whole map}}$
+
+
+
+### New idea:
+- The evaluation environment, should be randomly genereated path to the goal
+- The solver only training environment, should be one fixed path only to the goal
+
+### Plan:
+- Train the dynamic environment
+    - 30000 episodes per round, 6 for now
+- Consider about the evaluation metrices
+- Perform experiments in above
+
+
+# Week 9:
+- Try with different starting positions
+- Try with fixed reward for different steps
+- Try the idea of swapping the difficulities based on the performance of the solver 

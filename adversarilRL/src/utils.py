@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import heapq
-
+import copy
 
 REWARD_INDEX = 4
 DONE_INDEX = 5
@@ -96,6 +96,7 @@ def BFS(grid: np.array, current: tuple, visited: list, end:tuple):
     myQ.push([current,[]])
     while not myQ.isEmpty():
         coord, actions = myQ.pop()
+        
        
         if grid[coord[0]][coord[1]] == '1' or grid[coord[0]][coord[1]] == 'D' or grid[coord[0]][coord[1]] == 'P':
             if coord == end:    
@@ -111,7 +112,7 @@ def BFS(grid: np.array, current: tuple, visited: list, end:tuple):
     return -1
 
 
-def map_generation(prisoner_x, prisoner_y, door_x, door_y):
+def complex_map_generation(prisoner_x, prisoner_y, door_x, door_y):
     bridges = []
     grid = np.zeros((7, 7), dtype=object)
     for i in range(len(grid)):
@@ -128,6 +129,91 @@ def map_generation(prisoner_x, prisoner_y, door_x, door_y):
     if (door_x,door_y) not in grid:
         bridges.append([door_x,door_y])
     return grid, bridges
+
+
+def path_find(grid: np.array, current: tuple,  end:tuple):
+    parent = {}
+    visited = []
+    myQ = Queue()
+
+    visited.append(current)
+    myQ.push(current)
+    # count = 0
+    while not myQ.isEmpty():
+        coord = myQ.pop()
+        if grid[coord[0]][coord[1]] == 1 or grid[coord[0]][coord[1]] == 'G' or grid[coord[0]][coord[1]] == 'P':
+
+            if coord == end: 
+                path = []   
+                while coord in parent:
+                    path.append([coord[0], coord[1]])
+                    coord = parent[coord]
+                path.append([current[0],current[1]])
+                path.reverse()
+                return True, path
+            else:
+                for successor in getSuccessors(coord):
+                    if successor not in visited:
+                        parent[successor] = coord
+                        visited.append(successor)
+                        myQ.push(successor)
+            # count += 1
+            # if count == 6:
+            #     quit()
+    # print("No valid path")  
+    return False, []  
+
+
+
+def hard_mode_map(current: tuple, end:tuple):
+    grid = np.zeros((7, 7), dtype=object)
+
+    for i in range(0, end[1]+1):
+        grid[end[0], i] = 1
+
+    for j in range(0, end[0]):
+        grid[j, 0] = 1
+
+    checked = False
+    while not checked:
+        test = copy.deepcopy(grid)
+        indices = np.argwhere(test == 1)
+        np.random.shuffle(indices)
+        num_to_change = random.randint(1, len(indices)//2)
+        # num_to_change = 4
+        # print(num_to_change)
+        selected_indices = indices[:num_to_change]
+        # print(selected_indices)
+        test[selected_indices[:, 0], selected_indices[:, 1]] = 0
+        test[current[0],current[1]] = 1
+        checked, bridges = path_find(test, current,  end)
+
+    for x in range(len(grid)):
+        for y in range(len(grid[x])):
+            if [x,y] not in bridges:
+                grid[x,y] = 0
+    return grid, bridges  
+
+
+def one_path_map(solver_x, solver_y, door_x, door_y):
+    checked = False
+    while not checked:
+        grid, bridges = complex_map_generation(solver_x, solver_y, door_x, door_y)
+        checked, path = path_find(grid, (solver_x, solver_y), (door_x, door_y))
+
+        grid = np.zeros((7, 7), dtype=object)
+        for x,y in path:
+            grid[x,y] = 1
+
+    return grid, path
+
+
+
+
+
+
+
+
 
 
 

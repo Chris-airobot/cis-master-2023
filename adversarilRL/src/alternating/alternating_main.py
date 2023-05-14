@@ -8,7 +8,7 @@ from src.utils import *
 from alternating_env import AlternatingEnv
 from src.solver_only.single_environment import SingleEnvironment
 from argparse import ArgumentParser
-
+import wandb
 
 os.system('clear')
 # cwd = os.getcwd()
@@ -26,36 +26,37 @@ if first:
         file.close()
 
 
-def training(config):
+def training(helper_config, solver_config):
     
-    if config['environment_type'] == 'single':
+    if helper_config['environment_type'] == 'single':
         env = SingleEnvironment()
     else:
         env = AlternatingEnv()
         env.current_agent = 1
         helper = Agent(13, 
-                   config=config,
+                   config=helper_config,
                    input_dims=env.observation_space().shape,
-                   chkpt_dir='checkpoint/' + config['environment_type'],
+                   chkpt_dir='checkpoint/' + helper_config['environment_type'],
                    name='helper')
     
         if not first:
             helper.load_models()
 
     env.current_agent = 0
+
     solver = Agent(9, 
-                    config=config,
+                    config=solver_config,
                     input_dims=env.observation_space().shape,
                 #    chkpt_dir='checkpoint/' + config['environment_type'],
-                    chkpt_dir='checkpoint/' + config['environment_type'],
+                    chkpt_dir='checkpoint/' + helper_config['environment_type'],
                     name='solver')
     if not first:
         solver.load_models()
 
  
     figure_file = {
-        'solver': 'plots/' + config['environment_type'] +'/solver.png',
-        'helper': 'plots/' + config['environment_type'] + '/helper.png'
+        'solver': 'plots/' + helper_config['environment_type'] +'/solver.png',
+        'helper': 'plots/' + helper_config['environment_type'] + '/helper.png'
     }
 
 
@@ -93,8 +94,8 @@ def training(config):
     }
 
 
-    for i in range(config['episodes']):
-        auxiliary = -1
+    for i in range(helper_config['episodes']):
+        # auxiliary = 1
         done = False
         truncated = False
         solver_action_done = False
@@ -110,16 +111,15 @@ def training(config):
 
             if env.current_agent == 0:
                 action, prob, val = solver.choose_action(curr_state) 
-                next_state, reward, done, truncated, info = env.step(action)
+                next_state, reward, done, truncated, info, auxiliary = env.step(action)
                 memories['solver'] = [curr_state, action, prob, val, reward, done, truncated]
                 solver_action_done = True
 
-                if "Completed" in info['solver']:
-                    completed += 1
+                
 
             else:
                 action, prob, val = helper.choose_action(curr_state) 
-                next_state, reward, done, truncated, _ = env.step(action)
+                next_state, reward, done, truncated, info, auxiliary = env.step(action)
                 memories['helper'] = [curr_state, action, prob, val, reward, done, truncated]
 
 
@@ -131,7 +131,11 @@ def training(config):
 
                 # give external rewards for the helper if the solver terminate the environment
                 if memories['solver'][DONE_INDEX]:
-                    memories['helper'][REWARD_INDEX] += -2 * auxiliary
+                    if "Completed" in info['solver']:
+                        completed += 1
+                        memories['helper'][REWARD_INDEX] += 4 * auxiliary * 0.5
+                    else:
+                        memories['helper'][REWARD_INDEX] += -2 * auxiliary
                 else:
                     memories['helper'][REWARD_INDEX] += memories['solver'][REWARD_INDEX] * 2
 
@@ -142,9 +146,11 @@ def training(config):
                 properties['helper']['score'] += memories['helper'][REWARD_INDEX]
                 n_steps += 1
 
-                if n_steps % config['saving_steps'] == 0 and not memories['solver'][TRUNCATED_INDEX]:
-                    solver.learn()
+                if n_steps % helper_config['saving_steps'] == 0 and not memories['solver'][TRUNCATED_INDEX]:
                     helper.learn()
+                    learn_iters += 1
+                if n_steps % solver_config['saving_steps'] == 0 and not memories['solver'][TRUNCATED_INDEX]:
+                    solver.learn()
                     learn_iters += 1
 
                 solver_action_done = False
@@ -176,7 +182,7 @@ def training(config):
                 file.write(str)
                 properties['solver']['saved'] += 1     
 
-                solver.save_models()
+                # solver.save_models()
 
         if avg_helper_score > helper_best_score:
             if i > prepare:
@@ -188,17 +194,22 @@ def training(config):
                 str = repr(helper_best_score)
                 file.write(str)
                 properties['helper']['saved'] += 1
-                helper.save_models() 
+                # helper.save_models() 
 
-
+        # if i % 100 == 0:
         print(f'====================================== Episode: {i} ======================================')
-        print(f'Prisoner_score: {properties["solver"]["score"]}, avg_score: {avg_solver_score}')
-        if config['environment_type'] != 'single':
+        print(f'Solver_score: {properties["solver"]["score"]}, avg_score: {avg_solver_score}')
+        if helper_config['environment_type'] != 'single':
             print(f'Helper_score: {properties["helper"]["score"]}, avg_score: {avg_helper_score}')
-        print(f'time_steps: {n_steps}, learning_steps: {learn_iters}, completed_times: {completed}')
+        print(f'time_steps: {n_steps}, learning_steps: {learn_iters}, completed_times: {completed}, auxiliary: {auxiliary}')
         print(f'solver_model_saving: {properties["solver"]["saved"]}, helper_model_saving: {properties["helper"]["saved"]}')
         print(f'========================================================================================\n')
-        
+    
+        wandb.log({"Solver_score": avg_solver_score}, step=n_steps)
+        wandb.log({"Helper_score": avg_helper_score}, step=n_steps)
+        wandb.log({"Completed_times": completed}, step=n_steps)
+
+
 
         # # Plots
         # y = [i+1 for i in range(len(score_solver_history))]
@@ -212,6 +223,9 @@ def training(config):
 
 
 if __name__ == '__main__':
+
+
+
     parser = ArgumentParser()
     parser.add_argument(
         "-e",
@@ -224,20 +238,39 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 
-    config ={
+    helper_config ={
         "environment_type" : args.environment_type,
         "saving_steps" : 20,
-        "batch_size": 2,
-        "epochs": 12,
-        "alpha": 1.2e-5, # learning rate
-        "clip_ratio": 0.15,
-        "gamma": 0.99,   # discount factor
+        "batch_size": 32,
+        "epochs": 10,
+        "alpha": 2e-5, # learning rate
+        "clip_ratio": 0.2,
+        "gamma": 0.95,   # discount factor
         "td_lambda": 0.95,
-        "episodes": 10000
+        "episodes": 30000
     }
 
+    solver_config ={
+        "environment_type" : args.environment_type,
+        "saving_steps" : 20,
+        "batch_size": 32,
+        "epochs": 10,
+        "alpha":  2e-5, # learning rate
+        "clip_ratio": 0.1,
+        "gamma": 0.93,   # discount factor
+        "td_lambda": 0.99,
+        "episodes": 30000
+    }
+
+    run = wandb.init(
+        project="CIS_Master", 
+        name="alternating", 
+        resume=True,
+        config=solver_config,
+    )
+
     start = time.time()
-    training(config)
+    training(helper_config, solver_config)
     end = time.time()
     print(f"Total time taken: {end-start}")
     # import pettingzoo 

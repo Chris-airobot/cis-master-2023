@@ -22,9 +22,11 @@ class AlternatingEnv(ParallelEnv):
         # helper coordinates
         self.helper_x = None
         self.helper_y = None
+
         # helper latest generated block coordinates 
-        self.generated_block_x = None
-        self.generated_block_y = None
+        # self.generated_block_x = None
+        # self.generated_block_y = None
+
         # 0 for trap, 1 for bridge
         self.path = np.zeros(8, dtype=int)
         self.timestep = None
@@ -32,7 +34,7 @@ class AlternatingEnv(ParallelEnv):
         self.discount_factor = 0.99
 
 
-        self.auxiliary = -1
+        self.auxiliary = None
 
         # 0 for solver, 1 for helper
         self.current_agent = 0 
@@ -42,14 +44,19 @@ class AlternatingEnv(ParallelEnv):
     def reset(self, seed=None, return_info=False, options=None):
 
         # solver coordinates
-        self.solver_x = 0
-        self.solver_y = 0
+        self.solver_x = random.randint(0, 6) 
+        self.solver_y = random.randint(0, 6) 
+
         # helper coordinates
-        self.helper_x = 0
-        self.helper_y = 0
+        self.helper_x = self.solver_x
+        self.helper_y = self.solver_y 
+
+
         # helper latest generated block coordinates 
-        self.generated_block_x = 0
-        self.generated_block_y = 0
+        # self.generated_block_x = 0
+        # self.generated_block_y = 0
+
+
         # goal coordinates
         self.door_x = random.randint(2, 5) 
         # self.door_x = random.choice([2,4,6])
@@ -58,22 +65,30 @@ class AlternatingEnv(ParallelEnv):
         
         self.grid = np.zeros((7, 7), dtype=object)
         # a list contains all the moveable blocks
-        self.bridges = [[0,0]]
+        self.bridges = [[self.solver_x, self.solver_y]]
         # "bridges" are all indexs of the brdges in the map
         self.bridges.append([self.door_x, self.door_y])
         # Setting initial bridges for the grid
         self.grid[0][0] = 1
         self.grid[self.door_x][self.door_y] = 1
-        
-        # self.grid, self.bridges = map_generation(self.solver_x, 
-        #                                          self.solver_y, 
-        #                                          self.door_x, 
-        #                                          self.door_y)
 
+        # checked = False
+
+        # while not checked:
+        #     self.grid, self.bridges = map_generation(self.solver_x, 
+        #                                              self.solver_y,
+        #                                              self.door_x, 
+        #                                              self.door_y)
+            
+        #     checked = not map_check(self.grid,(self.solver_x, self.solver_y), [], (self.door_x, self.door_y))
+
+
+        
+    
         self.timestep = 0
         self.discount_factor = 0.99
         self.current_agent = 0
-        
+        self.auxiliary = 1
         # for render function
         self.display = np.zeros((7, 7), dtype=object)
         
@@ -99,7 +114,10 @@ class AlternatingEnv(ParallelEnv):
         termination = False
         truncation = False
         reward = 0
-        infos = {}
+        infos = {
+            'helper': '',
+            'solver': '',
+        }
 
         
         # self.helper_x = self.solver_x
@@ -245,7 +263,7 @@ class AlternatingEnv(ParallelEnv):
             # print(f'r_timeout is: {r_timeout}')
 
             reward = r_internal * self.auxiliary  + r_penalty + r_to_goal
-            # print(f'final reward is: {reward}')
+            # print(f'helper normal reward is: {reward}')
 
         # Prionser execute actions   
         # 1 block move: 0 up, 1 down, 2 left, 3 right
@@ -297,7 +315,9 @@ class AlternatingEnv(ParallelEnv):
 
             # Solver's normal reward
             r_closer = (self.discount_factor * potential_2  - potential_1) * 6  
-
+ 
+            # Fixed reward
+            r_closer = 0.5 if r_closer > 0 else -0.2
             # Save the best score for next ietration of training 
             # file = open("src/saved_files/solver_status.txt", "w")
             # #convert variable to string
@@ -345,7 +365,7 @@ class AlternatingEnv(ParallelEnv):
 
         
 
-        return observation, reward, termination, truncation, infos
+        return observation, reward, termination, truncation, infos, self.auxiliary
 
 
     def checkPath(self):
